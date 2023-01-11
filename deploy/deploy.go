@@ -52,7 +52,7 @@ func New(
 	parameterFile string) (string, error) {
 
 	if !level.Valid() || !op.Valid() {
-		return "", fmt.Errorf("invalid level or operation")
+		return "", fmt.Errorf("invalid level %s or operation %s", level, op)
 	}
 
 	i, b, j, err := verify(id, templateFile, parameterFile)
