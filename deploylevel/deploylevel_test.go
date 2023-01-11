@@ -1,10 +1,9 @@
 package deploylevel_test
 
 import (
-	"ddo/category"
 	"ddo/deploylevel"
+	"ddo/deployoperation"
 	"ddo/reporoot"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -13,24 +12,26 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	subId      = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	rgName     = "myrg"
+	context    = "mycontext"
+	deployment = "mycontext-895af37b7850639c7f2c"
+	bicep      = "./test/data/test.bicep"
+	json       = "./test/data/params.json"
+)
+
 func TestNewResourceGroup(t *testing.T) {
 	t.Parallel()
 
-	bicep := "/test/data/test.bicep"
-	bicepFile := filepath.Join(reporoot.Get(), bicep)
-
-	if _, err := os.Stat(bicepFile); err != nil {
-		t.Errorf("os.Stat() returned error: %v", err)
-	}
-
 	want := deploylevel.ResourceGroup{
-		Deployment:        "mycontext-895af37b7850639c7f2c",
-		SubscriptionId:    uuid.MustParse("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
-		ResourceGroupName: "myrg",
-		Template:          bicepFile,
+		Deployment:        deployment,
+		SubscriptionId:    uuid.MustParse(subId),
+		ResourceGroupName: rgName,
+		Template:          filepath.Join(reporoot.Get(), bicep),
 	}
 
-	got, err := deploylevel.NewResourceGroup("6ba7b810-9dad-11d1-80b4-00c04fd430c8", "myrg", bicep, "mycontext")
+	got, err := deploylevel.NewResourceGroup(subId, rgName, bicep, context)
 	if err != nil {
 		t.Errorf("NewResourceGroup() returned error: %v", err)
 	}
@@ -39,16 +40,29 @@ func TestNewResourceGroup(t *testing.T) {
 		t.Error(cmp.Diff(want, got))
 	}
 }
-func TestNewResourceGroupInvalid(t *testing.T) {
+
+func TestNewResourceGroupInvalidUUIF(t *testing.T) {
 	t.Parallel()
 
-	_, err := deploylevel.NewResourceGroup("no uuid", "myrg", "nofile", "mycontext")
-	if err == nil {
+	if _, err := deploylevel.NewResourceGroup(
+		"no uuid",
+		rgName,
+		bicep,
+		context,
+	); err == nil {
 		t.Fatal("want error for invalid resource group, got nil")
 	}
+}
 
-	_, err = deploylevel.NewResourceGroup("6ba7b810-9dad-11d1-80b4-00c04fd430c8", "myrg", "nofile", "mycontext")
-	if err == nil {
+func TestNewResourceGroupInvalidTemplate(t *testing.T) {
+	t.Parallel()
+
+	if _, err := deploylevel.NewResourceGroup(
+		subId,
+		rgName,
+		"no file",
+		context,
+	); err == nil {
 		t.Fatal("want error for invalid resource group, got nil")
 	}
 }
@@ -56,43 +70,57 @@ func TestNewResourceGroupInvalid(t *testing.T) {
 func TestResourceGroupAZCmd(t *testing.T) {
 	t.Parallel()
 
-	bicep := "./test/data/test.bicep"
-	bicepFile := filepath.Join(reporoot.Get(), bicep)
-
-	json := "./test/data/params.json"
-	jsonFile := filepath.Join(reporoot.Get(), json)
-
-	rg, err := deploylevel.NewResourceGroup("6ba7b810-9dad-11d1-80b4-00c04fd430c8", "myrg", bicep, "mycontext")
+	rg, err := deploylevel.NewResourceGroup(subId, rgName, bicep, context)
 	if err != nil {
 		t.Errorf("NewResourceGroup() returned error: %v", err)
 	}
 
-	got, err := rg.AZCmd(category.Validate, json)
+	for _, op := range deployoperation.Operations() {
+		got, err := rg.AZCmd(op, json)
+		if err != nil {
+			t.Errorf("AZCmd returned error: %v", err)
+		}
+
+		want := strings.Join(
+			[]string{
+				"az deployment group",
+				string(op),
+				"--name",
+				deployment,
+				"--subscription",
+				subId,
+				"--resource-group",
+				rgName,
+				"--template-file",
+				filepath.Join(reporoot.Get(), bicep),
+				"--out",
+				"yaml",
+				"--parameters",
+				"@" + filepath.Join(reporoot.Get(), json),
+			},
+			" ")
+
+		if got != want {
+			t.Errorf("want %v, got %v", want, got)
+		}
+	}
+}
+
+func TestResourceGroupAZCmdInvalidParameterFile(t *testing.T) {
+	t.Parallel()
+
+	rg, err := deploylevel.NewResourceGroup(
+		"6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+		"myrg",
+		bicep,
+		"mycontext",
+	)
 	if err != nil {
-		t.Errorf("AZCmd returned error: %v", err)
+		t.Errorf("NewResourceGroup() returned error: %v", err)
 	}
-
-	want := strings.Join(
-		[]string{
-			"az deployment group",
-			"validate",
-			"--name",
-			"mycontext-895af37b7850639c7f2c",
-			"--subscription",
-			"6ba7b810-9dad-11d1-80b4-00c04fd430c8",
-			"--resource-group",
-			"myrg",
-			"--template-file",
-			bicepFile,
-			"--out",
-			"yaml",
-			"--parameters",
-			"@" + jsonFile,
-		},
-		" ")
-
-	if got != want {
-		t.Errorf("want %v, got %v", want, got)
+	for _, op := range deployoperation.Operations() {
+		if _, err := rg.AZCmd(op, "no param json"); err == nil {
+			t.Fatal("want error for invalid AZCmd, got nil")
+		}
 	}
-
 }

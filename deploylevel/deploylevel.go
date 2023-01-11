@@ -1,7 +1,7 @@
 package deploylevel
 
 import (
-	"ddo/category"
+	"ddo/deployoperation"
 	"ddo/reporoot"
 	"os"
 	"path/filepath"
@@ -26,7 +26,6 @@ type ResourceGroup struct {
 func NewResourceGroup(subId string, rgName string, templateFile string, context string) (ResourceGroup, error) {
 
 	id, err := uuid.Parse(subId)
-
 	if err != nil {
 		return ResourceGroup{}, err
 	}
@@ -43,12 +42,7 @@ func NewResourceGroup(subId string, rgName string, templateFile string, context 
 	}, nil
 }
 
-func (rg ResourceGroup) AZCmd(c category.Category, parameterFile string) (string, error) {
-
-	op, err := c.ToOperation()
-	if err != nil {
-		return "", err
-	}
+func (rg ResourceGroup) AZCmd(op deployoperation.Operation, parameterFile string) (string, error) {
 
 	if _, err := os.Stat(filepath.Join(reporoot.Get(), parameterFile)); err != nil {
 		return "", err
@@ -57,7 +51,7 @@ func (rg ResourceGroup) AZCmd(c category.Category, parameterFile string) (string
 	return strings.Join(
 		[]string{
 			"az deployment group",
-			op,
+			string(op),
 			"--name",
 			rg.Deployment,
 			"--subscription",
@@ -103,7 +97,7 @@ func NewSubscription(subId string, location string, templateFile string, context
 	}, nil
 }
 
-// func (sub Subscription) azCmd(c category.Category, parameterFile string) (string, error) {
+// func (sub Subscription) azCmd(c deployoperation.Category, parameterFile string) (string, error) {
 // 	op, err := c.ToOperation()
 
 // 	if err != nil {
@@ -165,7 +159,7 @@ func NewManagementGroup(mgId string, location string, templateFile string, conte
 	}, nil
 }
 
-// func (mg ManagementGroup) azCmd(c category.Category, parameterFile string) (string, error) {
+// func (mg ManagementGroup) azCmd(c deployoperation.Category, parameterFile string) (string, error) {
 // 	op, err := c.ToOperation()
 
 // 	if err != nil {
