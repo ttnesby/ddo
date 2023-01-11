@@ -1,4 +1,4 @@
-package deployoperation
+package operation
 
 type Operation string
 
