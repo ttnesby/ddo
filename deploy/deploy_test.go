@@ -163,7 +163,7 @@ func TestNewInvalidLevel(t *testing.T) {
 	t.Parallel()
 
 	for _, op := range do.Operations() {
-		if _, err := deploy.New(dl.Level("n/a"), op, context, subId, rgName, bicep, json); err == nil {
+		if _, err := deploy.New("n/a", op, context, subId, rgName, bicep, json); err == nil {
 			t.Fatal("want error for invalid level, got nil")
 		}
 	}
@@ -173,7 +173,7 @@ func TestNewInvalidOperation(t *testing.T) {
 	t.Parallel()
 
 	for _, level := range dl.Levels() {
-		if _, err := deploy.New(level, do.Operation("n/a"), context, subId, rgName, bicep, json); err == nil {
+		if _, err := deploy.New(level, "n/a", context, subId, rgName, bicep, json); err == nil {
 			t.Fatal("want error for invalid operation, got nil")
 		}
 	}
