@@ -51,6 +51,10 @@ func New(
 	templateFile,
 	parameterFile string) (string, error) {
 
+	if !level.Valid() || !op.Valid() {
+		return "", fmt.Errorf("invalid level or operation")
+	}
+
 	i, b, j, err := verify(id, templateFile, parameterFile)
 	if err != nil {
 		return "", err
@@ -95,9 +99,8 @@ func New(
 					rgOrLocation,
 				},
 				" ")
-		default:
-			return ""
 		}
+		return "" // should never happen
 	}()
 
 	postfix := strings.Join(
@@ -110,10 +113,6 @@ func New(
 			"@" + j,
 		},
 		" ")
-
-	if infix == "" {
-		return "", fmt.Errorf("unknown level: %s", level)
-	}
 
 	return prefix + " " + infix + " " + postfix, nil
 }

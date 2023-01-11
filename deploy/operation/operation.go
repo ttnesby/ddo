@@ -11,3 +11,12 @@ const (
 func Operations() []Operation {
 	return []Operation{Validate, WhatIf, Deploy}
 }
+
+func (o Operation) Valid() bool {
+	switch o {
+	case Validate, WhatIf, Deploy:
+		return true
+	default:
+		return false
+	}
+}
