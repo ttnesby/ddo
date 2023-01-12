@@ -20,3 +20,7 @@ func (o Operation) Valid() bool {
 		return false
 	}
 }
+
+func (o Operation) String() string {
+	return string(o)
+}

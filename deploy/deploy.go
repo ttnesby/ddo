@@ -5,12 +5,16 @@ import (
 	do "ddo/deploy/operation"
 	rr "ddo/reporoot"
 	"fmt"
+	"gopkg.in/yaml.v3"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/google/uuid"
 )
+
+type AzDeploy []string
 
 func name(context string) string {
 	sha1 := uuid.NewSHA1(uuid.NameSpaceDNS, []byte(context))
@@ -49,7 +53,7 @@ func New(
 	id,
 	rgOrLocation,
 	templateFile,
-	parameterFile string) ([]string, error) {
+	parameterFile string) (AzDeploy, error) {
 
 	if !level.Valid() || !op.Valid() {
 		return nil, fmt.Errorf("invalid level %s or operation %s", level, op)
@@ -106,4 +110,35 @@ func New(
 	}
 
 	return append(append(prefix, infix...), postfix...), nil
+}
+
+func (azCmd AzDeploy) Run() (asYaml map[string]interface{}, asByte []byte, e error) {
+
+	isWhatIf := azCmd[3] == do.WhatIf.String()
+
+	cmd := func() *exec.Cmd {
+		if isWhatIf {
+			return exec.Command(azCmd[0], azCmd[1:]...)
+		} else {
+			return exec.Command("/bin/sh", "-c", strings.Join(azCmd, " "))
+		}
+	}()
+
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, nil, fmt.Errorf("Run() for %v\nreturned error %s\n", azCmd, err)
+	}
+
+	// only hard-to-parse output from what-if, leaving as is
+	if isWhatIf {
+		return nil, out, nil
+	}
+
+	// parse the output
+	data := make(map[string]interface{})
+	if err = yaml.Unmarshal(out, &data); err != nil {
+		return nil, nil, fmt.Errorf("yaml.Unmarshal() of %v\nreturned error %v\n", out, err)
+	}
+
+	return data, nil, nil
 }

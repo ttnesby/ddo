@@ -32,7 +32,7 @@ func TestNewResourceGroup(t *testing.T) {
 			t.Errorf("New() returned error: %v", err)
 		}
 
-		want := []string{
+		want := deploy.AzDeploy([]string{
 			"az",
 			"deployment",
 			"group",
@@ -49,7 +49,7 @@ func TestNewResourceGroup(t *testing.T) {
 			"yaml",
 			"--parameters",
 			"@" + filepath.Join(rr.Get(), json),
-		}
+		})
 
 		if !cmp.Equal(want, got) {
 			t.Error(cmp.Diff(want, got))
@@ -66,7 +66,7 @@ func TestNewSubscription(t *testing.T) {
 			t.Errorf("New() returned error: %v", err)
 		}
 
-		want := []string{
+		want := deploy.AzDeploy([]string{
 			"az",
 			"deployment",
 			"sub",
@@ -83,7 +83,7 @@ func TestNewSubscription(t *testing.T) {
 			"yaml",
 			"--parameters",
 			"@" + filepath.Join(rr.Get(), json),
-		}
+		})
 
 		if !cmp.Equal(want, got) {
 			t.Error(cmp.Diff(want, got))
@@ -100,7 +100,7 @@ func TestNewManagementGroup(t *testing.T) {
 			t.Errorf("New() returned error: %v", err)
 		}
 
-		want := []string{
+		want := deploy.AzDeploy([]string{
 			"az",
 			"deployment",
 			"mg",
@@ -117,7 +117,7 @@ func TestNewManagementGroup(t *testing.T) {
 			"yaml",
 			"--parameters",
 			"@" + filepath.Join(rr.Get(), json),
-		}
+		})
 
 		if !cmp.Equal(want, got) {
 			t.Error(cmp.Diff(want, got))
