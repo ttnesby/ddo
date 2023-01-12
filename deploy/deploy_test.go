@@ -7,8 +7,8 @@ import (
 	dl "ddo/deploy/level"
 	do "ddo/deploy/operation"
 	rr "ddo/reporoot"
+	"github.com/google/go-cmp/cmp"
 	"path/filepath"
-	"strings"
 	"testing"
 )
 
@@ -32,27 +32,27 @@ func TestNewResourceGroup(t *testing.T) {
 			t.Errorf("New() returned error: %v", err)
 		}
 
-		want := strings.Join(
-			[]string{
-				"az deployment group",
-				string(op),
-				"--name",
-				deployment,
-				"--subscription",
-				subId,
-				"--resource-group",
-				rgName,
-				"--template-file",
-				filepath.Join(rr.Get(), bicep),
-				"--out",
-				"yaml",
-				"--parameters",
-				"@" + filepath.Join(rr.Get(), json),
-			},
-			" ")
+		want := []string{
+			"az",
+			"deployment",
+			"group",
+			string(op),
+			"--name",
+			deployment,
+			"--subscription",
+			subId,
+			"--resource-group",
+			rgName,
+			"--template-file",
+			filepath.Join(rr.Get(), bicep),
+			"--out",
+			"yaml",
+			"--parameters",
+			"@" + filepath.Join(rr.Get(), json),
+		}
 
-		if got != want {
-			t.Errorf("want %v, got %v", want, got)
+		if !cmp.Equal(want, got) {
+			t.Error(cmp.Diff(want, got))
 		}
 	}
 }
@@ -66,27 +66,27 @@ func TestNewSubscription(t *testing.T) {
 			t.Errorf("New() returned error: %v", err)
 		}
 
-		want := strings.Join(
-			[]string{
-				"az deployment sub",
-				string(op),
-				"--name",
-				deployment,
-				"--subscription",
-				subId,
-				"--location",
-				location,
-				"--template-file",
-				filepath.Join(rr.Get(), bicep),
-				"--out",
-				"yaml",
-				"--parameters",
-				"@" + filepath.Join(rr.Get(), json),
-			},
-			" ")
+		want := []string{
+			"az",
+			"deployment",
+			"sub",
+			string(op),
+			"--name",
+			deployment,
+			"--subscription",
+			subId,
+			"--location",
+			location,
+			"--template-file",
+			filepath.Join(rr.Get(), bicep),
+			"--out",
+			"yaml",
+			"--parameters",
+			"@" + filepath.Join(rr.Get(), json),
+		}
 
-		if got != want {
-			t.Errorf("want %v, got %v", want, got)
+		if !cmp.Equal(want, got) {
+			t.Error(cmp.Diff(want, got))
 		}
 	}
 }
@@ -100,27 +100,27 @@ func TestNewManagementGroup(t *testing.T) {
 			t.Errorf("New() returned error: %v", err)
 		}
 
-		want := strings.Join(
-			[]string{
-				"az deployment mg",
-				string(op),
-				"--name",
-				deployment,
-				"--management-group-id",
-				mgId,
-				"--location",
-				location,
-				"--template-file",
-				filepath.Join(rr.Get(), bicep),
-				"--out",
-				"yaml",
-				"--parameters",
-				"@" + filepath.Join(rr.Get(), json),
-			},
-			" ")
+		want := []string{
+			"az",
+			"deployment",
+			"mg",
+			string(op),
+			"--name",
+			deployment,
+			"--management-group-id",
+			mgId,
+			"--location",
+			location,
+			"--template-file",
+			filepath.Join(rr.Get(), bicep),
+			"--out",
+			"yaml",
+			"--parameters",
+			"@" + filepath.Join(rr.Get(), json),
+		}
 
-		if got != want {
-			t.Errorf("want %v, got %v", want, got)
+		if !cmp.Equal(want, got) {
+			t.Error(cmp.Diff(want, got))
 		}
 	}
 }

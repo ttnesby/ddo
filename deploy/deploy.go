@@ -49,70 +49,61 @@ func New(
 	id,
 	rgOrLocation,
 	templateFile,
-	parameterFile string) (string, error) {
+	parameterFile string) ([]string, error) {
 
 	if !level.Valid() || !op.Valid() {
-		return "", fmt.Errorf("invalid level %s or operation %s", level, op)
+		return nil, fmt.Errorf("invalid level %s or operation %s", level, op)
 	}
 
 	i, b, j, err := verify(id, templateFile, parameterFile)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	prefix := strings.Join(
-		[]string{
-			"az deployment",
-			string(level),
-			string(op),
-			"--name",
-			name(context),
-		},
-		" ")
+	prefix := []string{
+		"az",
+		"deployment",
+		string(level),
+		string(op),
+		"--name",
+		name(context),
+	}
 
-	infix := func() string {
+	infix := func() []string {
 		switch level {
 		case dl.ResourceGroup:
-			return strings.Join(
-				[]string{
-					"--subscription",
-					i.String(),
-					"--resource-group",
-					rgOrLocation,
-				},
-				" ")
+			return []string{
+				"--subscription",
+				i.String(),
+				"--resource-group",
+				rgOrLocation,
+			}
 		case dl.Subscription:
-			return strings.Join(
-				[]string{
-					"--subscription",
-					i.String(),
-					"--location",
-					rgOrLocation,
-				},
-				" ")
+			return []string{
+				"--subscription",
+				i.String(),
+				"--location",
+				rgOrLocation,
+			}
 		case dl.ManagementGroup:
-			return strings.Join(
-				[]string{
-					"--management-group-id",
-					i.String(),
-					"--location",
-					rgOrLocation,
-				},
-				" ")
+			return []string{
+				"--management-group-id",
+				i.String(),
+				"--location",
+				rgOrLocation,
+			}
 		}
-		return "" // should never happen
+		return nil // should never happen
 	}()
 
-	postfix := strings.Join(
-		[]string{
-			"--template-file",
-			b,
-			"--out",
-			"yaml",
-			"--parameters",
-			"@" + j,
-		},
-		" ")
+	postfix := []string{
+		"--template-file",
+		b,
+		"--out",
+		"yaml",
+		"--parameters",
+		"@" + j,
+	}
 
-	return prefix + " " + infix + " " + postfix, nil
+	return append(append(prefix, infix...), postfix...), nil
 }
