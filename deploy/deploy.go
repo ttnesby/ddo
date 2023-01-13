@@ -14,7 +14,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type AzDeploy []string
+type AzCli []string
 
 func name(context string) string {
 	sha1 := uuid.NewSHA1(uuid.NameSpaceDNS, []byte(context))
@@ -53,7 +53,7 @@ func New(
 	id,
 	rgOrLocation,
 	templateFile,
-	parameterFile string) (AzDeploy, error) {
+	parameterFile string) (AzCli, error) {
 
 	if !level.Valid() || !op.Valid() {
 		return nil, fmt.Errorf("invalid level %s or operation %s", level, op)
@@ -112,7 +112,7 @@ func New(
 	return append(append(prefix, infix...), postfix...), nil
 }
 
-func (azCmd AzDeploy) Run() (asYaml map[string]interface{}, asByte []byte, e error) {
+func (azCmd AzCli) Run() (asYaml map[string]interface{}, asByte []byte, e error) {
 
 	isWhatIf := azCmd[3] == do.WhatIf.String()
 

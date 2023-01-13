@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	location   = "norwayEast"
+	location   = "norwayeast"
 	mgId       = "6ba7b810-9dad-11d1-80b4-00c04fd43022"
 	subId      = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
 	rgName     = "myRg"
@@ -32,7 +32,7 @@ func TestNewResourceGroup(t *testing.T) {
 			t.Errorf("New() returned error: %v", err)
 		}
 
-		want := deploy.AzDeploy([]string{
+		want := deploy.AzCli([]string{
 			"az",
 			"deployment",
 			"group",
@@ -66,7 +66,7 @@ func TestNewSubscription(t *testing.T) {
 			t.Errorf("New() returned error: %v", err)
 		}
 
-		want := deploy.AzDeploy([]string{
+		want := deploy.AzCli([]string{
 			"az",
 			"deployment",
 			"sub",
@@ -100,7 +100,7 @@ func TestNewManagementGroup(t *testing.T) {
 			t.Errorf("New() returned error: %v", err)
 		}
 
-		want := deploy.AzDeploy([]string{
+		want := deploy.AzCli([]string{
 			"az",
 			"deployment",
 			"mg",

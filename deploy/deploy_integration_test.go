@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	itLocation = "norwayEast"
+	itLocation = "norwayeast"
 	itSubId    = "ca1e4592-6211-4c03-aac5-e681c1d1ea0d"
 	itBicep    = "./test/data/resourceGroup.bicep"
 	itJson     = "./test/data/resourceGroup.params.json"
