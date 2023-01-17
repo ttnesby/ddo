@@ -1,11 +1,9 @@
 //go:build integration
 
-package deploy_test
+package deployment_test
 
 import (
-	"ddo/deploy"
-	dl "ddo/deploy/level"
-	do "ddo/deploy/operation"
+	dep "ddo/deployment"
 	"testing"
 )
 
@@ -19,7 +17,7 @@ const (
 func TestDeploymentSubscriptionValidate(t *testing.T) {
 	t.Parallel()
 
-	azCmd, err := deploy.New(dl.Subscription, do.Validate, "rg-ddo-test", itSubId, itLocation, itBicep, itJson)
+	azCmd, err := dep.Validate(itBicep, itJson, dep.Subscription(itSubId, itLocation))
 	if err != nil {
 		t.Error(err)
 	}
@@ -32,7 +30,7 @@ func TestDeploymentSubscriptionValidate(t *testing.T) {
 func TestDeploymentSubscriptionWhatIf(t *testing.T) {
 	//t.Parallel()
 
-	azCmd, err := deploy.New(dl.Subscription, do.WhatIf, "rg-ddo-test", itSubId, itLocation, itBicep, itJson)
+	azCmd, err := dep.WhatIf(itBicep, itJson, dep.Subscription(itSubId, itLocation))
 	if err != nil {
 		t.Error(err)
 	}
@@ -45,7 +43,7 @@ func TestDeploymentSubscriptionWhatIf(t *testing.T) {
 func TestDeploymentSubscriptionDeploy(t *testing.T) {
 	t.Parallel()
 
-	azCmd, err := deploy.New(dl.Subscription, do.Deploy, "rg-ddo-test", itSubId, itLocation, itBicep, itJson)
+	azCmd, err := dep.Deploy(itBicep, itJson, dep.Subscription(itSubId, itLocation))
 	if err != nil {
 		t.Error(err)
 	}
