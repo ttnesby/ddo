@@ -27,6 +27,7 @@ func TestDeploymentSubscriptionValidate(t *testing.T) {
 	}
 }
 
+// issue - something is wrong using exec - needs to be fixed
 func TestDeploymentSubscriptionWhatIf(t *testing.T) {
 	//t.Parallel()
 

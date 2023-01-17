@@ -4,18 +4,10 @@ import (
 	de "ddo/deployment/destination"
 	fp "ddo/fullpath"
 	"fmt"
+	"github.com/google/uuid"
 	"gopkg.in/yaml.v3"
 	"os/exec"
 	"strings"
-
-	//"fmt"
-	//"gopkg.in/yaml.v3"
-	//"os"
-	//"os/exec"
-	//"path/filepath"
-	//"strings"
-
-	"github.com/google/uuid"
 )
 
 type operation string
