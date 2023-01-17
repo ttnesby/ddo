@@ -1,11 +1,13 @@
 package deployment
 
 import (
+	"bytes"
 	de "ddo/deployment/destination"
 	fp "ddo/fullpath"
 	"fmt"
 	"github.com/google/uuid"
-	"gopkg.in/yaml.v3"
+	"io"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -45,10 +47,13 @@ func azDeploy(op operation, templatePath, parameterPath string, destination ADes
 	}
 	dest, destParams := theDest.AzCli()
 
-	prefix := []string{"az", "deployment", dest, string(op), "--name", name(tfp + pfp)}
-	postfix := []string{"--template-file", tfp, "--parameters", "@" + pfp, "--out", "yaml"}
+	azCmd := []string{"az", "deployment", dest}
+	azCmd = append(azCmd, strings.Split(string(op), " ")...) // due to whatIf
+	azCmd = append(azCmd, "--name", name(tfp+pfp))
+	azCmd = append(azCmd, destParams...)
+	azCmd = append(azCmd, "--template-file", tfp, "--parameters", "@"+pfp, "--out", "yaml")
 
-	return append(append(prefix, destParams...), postfix...), nil
+	return azCmd, nil
 }
 
 func ResourceGroup(name, inSubscriptionId string) ADestination {
@@ -81,33 +86,39 @@ func Deploy(templatePath, parameterPath string, destination ADestination) (AzCli
 	return azDeploy(deploy, templatePath, parameterPath, destination)
 }
 
-func (azCmd AzCli) Run() (asYaml map[string]interface{}, asByte []byte, e error) {
+func (azCmd AzCli) IsWhatIf() bool {
+	// !!observe, starting index : starting index + no of elements to get
+	return strings.Join(azCmd[3:5], " ") == string(whatIf)
+}
 
-	isWhatIf := operation(azCmd[3]) == whatIf
+func (azCmd AzCli) Run() (byte []byte, e error) {
 
-	cmd := func() *exec.Cmd {
-		if isWhatIf {
-			return exec.Command(azCmd[0], azCmd[1:]...)
-		} else {
-			return exec.Command("/bin/sh", "-c", strings.Join(azCmd, " "))
-		}
-	}()
+	cmd := exec.Command(azCmd[0], azCmd[1:]...)
+	//out, err := cmd.CombinedOutput()
+	//if err != nil {
+	//	return nil, nil, fmt.Errorf("Run() for %v\nreturned error %s\n", azCmd, err)
+	//}
 
-	out, err := cmd.CombinedOutput()
+	var stdoutBuf, stderrBuf bytes.Buffer
+	cmd.Stdout = io.MultiWriter(os.Stdout, &stdoutBuf)
+	cmd.Stderr = io.MultiWriter(os.Stderr, &stderrBuf)
+
+	err := cmd.Run()
 	if err != nil {
-		return nil, nil, fmt.Errorf("Run() for %v\nreturned error %s\n", azCmd, err)
+		return nil, fmt.Errorf("cmd.Run() of %v\nfailed with %s\n", azCmd, err)
 	}
 
-	// only hard-to-parse output from what-if, leaving as is
-	if isWhatIf {
-		return nil, out, nil
+	out, errStr := stdoutBuf.Bytes(), string(stderrBuf.Bytes())
+	//fmt.Printf("\nout:\n%s\nerr:\n%s\n", out, errStr)
+	if errStr != "" {
+		return nil, fmt.Errorf("%v\nreturned error %s\n", azCmd, errStr)
 	}
 
 	// parse the output
-	data := make(map[string]interface{})
-	if err = yaml.Unmarshal(out, &data); err != nil {
-		return nil, nil, fmt.Errorf("yaml.Unmarshal() of %v\nreturned error %v\n", out, err)
-	}
+	//data := make(map[string]interface{})
+	//if err = yaml.Unmarshal(out, &data); err != nil {
+	//	return nil, nil, fmt.Errorf("yaml.Unmarshal() of %v\nreturned error %v\n", out, err)
+	//}
 
-	return data, nil, nil
+	return out, nil
 }

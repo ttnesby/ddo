@@ -46,24 +46,49 @@ func destAndOps(templatePath, paramsPath string, aDest dep.ADestination) error {
 		tfp, _ := fullpath.Get(templatePath)
 		pfp, _ := fullpath.Get(paramsPath)
 
-		want := dep.AzCli([]string{
-			"az",
-			"deployment",
-			dest,
-			got[3],
-			"--name",
-			got[5],
-			destParams[0],
-			destParams[1],
-			destParams[2],
-			destParams[3],
-			"--template-file",
-			tfp,
-			"--parameters",
-			"@" + pfp,
-			"--out",
-			"yaml",
-		})
+		// check for what-if handling
+		want := func() dep.AzCli {
+			if got.IsWhatIf() {
+				return []string{
+					"az",
+					"deployment",
+					dest,
+					got[3],
+					got[4], // adding --what-if
+					"--name",
+					got[6],
+					destParams[0],
+					destParams[1],
+					destParams[2],
+					destParams[3],
+					"--template-file",
+					tfp,
+					"--parameters",
+					"@" + pfp,
+					"--out",
+					"yaml",
+				}
+			} else {
+				return []string{
+					"az",
+					"deployment",
+					dest,
+					got[3],
+					"--name",
+					got[5],
+					destParams[0],
+					destParams[1],
+					destParams[2],
+					destParams[3],
+					"--template-file",
+					tfp,
+					"--parameters",
+					"@" + pfp,
+					"--out",
+					"yaml",
+				}
+			}
+		}()
 
 		if !cmp.Equal(want, got) {
 			return fmt.Errorf("%v", cmp.Diff(want, got))
