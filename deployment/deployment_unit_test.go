@@ -4,7 +4,7 @@ package deployment_test
 
 import (
 	dep "ddo/deployment"
-	"ddo/fullpath"
+	"ddo/path"
 	"fmt"
 	"github.com/google/go-cmp/cmp"
 	"testing"
@@ -26,7 +26,7 @@ func destAndOps(templatePath, paramsPath string, aDest dep.ADestination) error {
 
 	theDest, err := aDest()
 	if err != nil {
-		return fmt.Errorf("%v", err)
+		return err
 	}
 	dest, destParams := theDest.AzCli()
 
@@ -36,15 +36,21 @@ func destAndOps(templatePath, paramsPath string, aDest dep.ADestination) error {
 		func() (dep.AzCli, error) { return dep.Deploy(templatePath, paramsPath, aDest) },
 	}
 
+	tfp := path.RepoAbs(templatePath)
+	if !path.AbsExists(tfp) {
+		return fmt.Errorf("template file %s does not exist", tfp)
+	}
+
+	pfp := path.RepoAbs(paramsPath)
+	if !path.AbsExists(pfp) {
+		return fmt.Errorf("params file %s does not exist", pfp)
+	}
+
 	for _, op := range ops {
 		got, err := op()
-
 		if err != nil {
 			return fmt.Errorf("%v", err)
 		}
-
-		tfp, _ := fullpath.Get(templatePath)
-		pfp, _ := fullpath.Get(paramsPath)
 
 		// check for what-if handling
 		want := func() dep.AzCli {

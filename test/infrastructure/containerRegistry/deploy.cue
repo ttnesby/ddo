@@ -1,7 +1,7 @@
 package containerRegistry
 
 import (
-	g "ddo.test:global"
+	g "ddo.test/test:global"
 	rg "ddo.test/infrastructure/resourceGroup"
 	ddo "github.com/ttnesby/ddoapi/cue/v1:deployment"
 )
@@ -39,17 +39,19 @@ _tenant: g.#aTenantKey @tag(tenant)
 ddo.#deployment & {
 
 	templatePath: "./test/containerRegistry/main.bicep"
-	parameters: {
-		name:     #name
-		location: #location
-		tags:     #tags
-		skuName:  #skuName
-		// no identity
-		properties: #propertiesTemplate
+	parameters: ddo.#jsonParameterFile & {
+		#s:  {
+			name:     #name
+			location: #location
+			tags:     #tags
+			skuName:  #skuName
+			// no identity
+			properties: #propertiesTemplate
+		}
 	}
 
 	target: ddo.#resourceGroup & {
-		name: rg.#name
-		inSubscriptionId:  g.#subscriptionId[_tenant]
+		name:             rg.#name
+		inSubscriptionId: g.#subscriptionId[_tenant]
 	}
 }

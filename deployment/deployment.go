@@ -3,7 +3,7 @@ package deployment
 import (
 	"bytes"
 	de "ddo/deployment/destination"
-	fp "ddo/fullpath"
+	fp "ddo/path"
 	"fmt"
 	"github.com/google/uuid"
 	"io"
@@ -31,15 +31,8 @@ type ADestination func() (de.Destination, error)
 
 func azDeploy(op operation, templatePath, parameterPath string, destination ADestination) (AzCli, error) {
 
-	tfp, err := fp.Get(templatePath)
-	if err != nil {
-		return nil, err
-	}
-
-	pfp, err := fp.Get(parameterPath)
-	if err != nil {
-		return nil, err
-	}
+	tfp := fp.RepoAbs(templatePath)
+	pfp := fp.RepoAbs(parameterPath)
 
 	theDest, err := destination()
 	if err != nil {
