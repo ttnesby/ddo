@@ -4,7 +4,7 @@ import (
 	ddo "github.com/ttnesby/ddoapi/cue/v1:actions"
 )
 
-//cue export -p actions ./test/ddo.cue ./cue.mod/pkg/github.com/ttnesby/ddoapi/cue/v1/actions.schema.cue
+// cue export -p actions ./test/ddo.cue ./cue/actions.schema.cue
 
 #tenants: ["navutv", "navno"]
 #aTenant: or(#tenants)

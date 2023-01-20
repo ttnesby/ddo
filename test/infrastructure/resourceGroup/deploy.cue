@@ -5,7 +5,7 @@ import (
 	ddo "github.com/ttnesby/ddoapi/cue/v1:deployment"
 )
 
-// cue export -p deployment ./test/infrastructure/resourceGroup ./cue.mod/pkg/github.com/ttnesby/ddoapi/cue/v1/deployment.schema.cue -t tenant=navutv
+// cue export -p deployment ./test/infrastructure/resourceGroup ./cue/deployment.schema.cue -t tenant=navutv
 
 _tenant: g.#aTenantKey @tag(tenant)
 
