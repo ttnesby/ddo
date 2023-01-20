@@ -1,10 +1,12 @@
-package containerRegistry
+package deployment
 
 import (
 	g "ddo.test/test:global"
-	rg "ddo.test/infrastructure/resourceGroup"
+	rg "ddo.test/test/infrastructure/resourceGroup:deployment"
 	ddo "github.com/ttnesby/ddoapi/cue/v1:deployment"
 )
+
+// cue export -p deployment ./test/infrastructure/containerRegistry ./cue.mod/pkg/github.com/ttnesby/ddoapi/cue/v1/deployment.schema.cue -t tenant=navutv
 
 _tenant: g.#aTenantKey @tag(tenant)
 
@@ -36,10 +38,9 @@ _tenant: g.#aTenantKey @tag(tenant)
 	zoneRedundancy:      *"enabled" | #enabling // requires sku Premium
 }
 
-ddo.#deployment & {
+templatePath: "./test/containerRegistry/main.bicep"
 
-	templatePath: "./test/containerRegistry/main.bicep"
-	parameters: ddo.#jsonParameterFile & {
+parameters: ddo.#jsonParameterFile & {
 		#s:  {
 			name:     #name
 			location: #location
@@ -48,10 +49,10 @@ ddo.#deployment & {
 			// no identity
 			properties: #propertiesTemplate
 		}
-	}
+}
 
-	target: ddo.#resourceGroup & {
+target: resourceGroup: {
 		name:             rg.#name
 		inSubscriptionId: g.#subscriptionId[_tenant]
-	}
 }
+

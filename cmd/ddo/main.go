@@ -5,36 +5,31 @@ import (
 	"dagger.io/dagger"
 	"ddo/path"
 	"fmt"
+	"os"
 )
 
 func main() {
-	if err := build(context.Background()); err != nil {
-		fmt.Println(err)
-	}
+	exitCode := func() int {
+		if err := build(context.Background()); err != nil {
+			fmt.Println(err)
+			return 1
+		}
+		return 0
+	}()
+	fmt.Printf("Exit code: %d\n", exitCode)
+	os.Exit(exitCode)
 }
 
-func build(ctx context.Context) error {
+func getDotAzurePath() string {
+	return path.HomeAbs(".azure")
+}
 
-	fmt.Println("Start dagger and initialize client")
-	client, err := dagger.Connect(ctx)
-	if err != nil {
-		return err
-	}
-	defer func(client *dagger.Client) {
-		_ = client.Close()
-	}(client)
+func hostRepoRoot(c *dagger.Client) *dagger.Directory {
+	return c.Host().Directory(path.RepoRoot())
+}
 
-	fmt.Printf("Connect to host repository %s\n", path.RepoRoot())
-	repo := client.Host().Directory(path.RepoRoot())
-
-	da := path.HomeAbs(".azure")
-	fmt.Printf("Connect to host %s\n", da)
-	if !path.AbsExists(da) {
-		return fmt.Errorf("folder %s does not exist", da)
-	}
-
-	dotAzure := client.Host().Directory(
-		da,
+func hostDotAzure(c *dagger.Client) *dagger.Directory {
+	return c.Host().Directory(getDotAzurePath(),
 		dagger.HostDirectoryOpts{
 			Include: []string{
 				"azureProfile.json",
@@ -44,15 +39,39 @@ func build(ctx context.Context) error {
 			},
 		},
 	)
+}
 
-	contRef := "docker.io/ttnesby/azbicue:latest"
-	fmt.Printf("Connect to container %s\n", contRef)
+func build(ctx context.Context) error {
+
+	const (
+		containerRef      = "docker.io/ttnesby/azbicue:latest"
+		containerDotAzure = "/root/.azure"
+		containerRepoRoot = "/rr"
+	)
+
+	fmt.Println("Start dagger client")
+	client, err := dagger.Connect(ctx)
+	if err != nil {
+		return err
+	}
+
+	defer func(client *dagger.Client) {
+		_ = client.Close()
+	}(client)
+
+	fmt.Printf("Verify and connect to host repository %s\n", path.RepoRoot())
+	fmt.Printf("Verify and connect to host %s\n", getDotAzurePath())
+	if !path.AbsExists(getDotAzurePath()) {
+		return fmt.Errorf("folder %s does not exist", getDotAzurePath())
+	}
+
+	fmt.Printf("Start container %s mounting [repo root, .azure]\n", containerRef)
 
 	azbicue := client.Container().
-		From(contRef).
-		WithMountedDirectory("rr", repo).
-		WithMountedDirectory("/root/.azure", dotAzure).
-		WithWorkdir("/rr")
+		From(containerRef).
+		WithMountedDirectory(containerRepoRoot, hostRepoRoot(client)).
+		WithMountedDirectory(containerDotAzure, hostDotAzure(client)).
+		WithWorkdir(containerRepoRoot)
 
 	actionsCmd := []string{
 		"cue",
@@ -60,7 +79,7 @@ func build(ctx context.Context) error {
 		"-p",
 		"ddospec",
 		"./test/ddo.cue",
-		"./test/ddo.schema.cue",
+		"./test/actions.schema.cue",
 	}
 
 	fmt.Printf("Reading action specification %v\n\n", actionsCmd)

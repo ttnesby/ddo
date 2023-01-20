@@ -1,24 +1,35 @@
-package ddospec
+package actions
+
+import (
+	ddo "github.com/ttnesby/ddoapi/cue/v1:actions"
+)
+
+//cue export -p actions ./test/ddo.cue ./cue.mod/pkg/github.com/ttnesby/ddoapi/cue/v1/actions.schema.cue
 
 #tenants: ["navutv", "navno"]
 #aTenant: or(#tenants)
 
 componentsPath: "./test/infrastructure"
+//componentsPath: ""
+
 #components: {
 	#tenant: #aTenant
-	rg: #component & {
+	rg: ddo.#component & {
 		folder: "resourceGroup"
 		tags: ["tenant=\(#tenant)"]
 	}
-	cr: #component &{
+	cr: ddo.#component &{
 		folder: "containerRegistry"
 		tags:["tenant=\(#tenant)"]
 	}
 }
 
-#componentActions: {
+_actions: {
 	for t in #tenants {"\(t)": _}
 	[tenant=#aTenant]: #components & {#tenant: tenant}
 }
 
-componentOrder: [["rg"], ["cr"]]
+ddo.#actions & {#componentActions: _actions}
+
+deployOrder: [["rg"], ["cr"]]
+
