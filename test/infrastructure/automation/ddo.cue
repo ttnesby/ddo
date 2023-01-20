@@ -1,10 +1,6 @@
 package actions
 
-import (
-	ddo "github.com/ttnesby/ddoapi/cue/v1:actions"
-)
-
-// cue export -p actions ./test/ddo.cue ./cue/actions.schema.cue
+// cue export ./test/infrastructure/automation
 
 #tenants: ["navutv", "navno"]
 #aTenant: or(#tenants)
@@ -14,21 +10,21 @@ componentsPath: "./test/infrastructure"
 
 #components: {
 	#tenant: #aTenant
-	rg: ddo.#component & {
+	rg: #component & {
 		folder: "resourceGroup"
 		tags: ["tenant=\(#tenant)"]
 	}
-	cr: ddo.#component &{
+	cr: #component &{
 		folder: "containerRegistry"
 		tags:["tenant=\(#tenant)"]
 	}
 }
+
+deployOrder: [["rg"], ["cr"]]
 
 _actions: {
 	for t in #tenants {"\(t)": _}
 	[tenant=#aTenant]: #components & {#tenant: tenant}
 }
 
-ddo.#actions & {#componentActions: _actions}
-
-deployOrder: [["rg"], ["cr"]]
+#actions & {#componentActions: _actions}

@@ -3,10 +3,9 @@ package deployment
 import (
 	g "ddo.test/test:global"
 	rg "ddo.test/test/infrastructure/resourceGroup:deployment"
-	ddo "github.com/ttnesby/ddoapi/cue/v1:deployment"
 )
 
-//cue export -p deployment ./test/infrastructure/containerRegistry ./cue/deployment.schema.cue -t tenant=navutv
+//cue export ./test/infrastructure/containerRegistry -t tenant=navutv
 
 _tenant: g.#aTenantKey @tag(tenant)
 
@@ -40,7 +39,7 @@ _tenant: g.#aTenantKey @tag(tenant)
 
 templatePath: "./test/containerRegistry/main.bicep"
 
-parameters: ddo.#jsonParameterFile & {
+parameters: #jsonParameterFile & {
 		#s:  {
 			name:     #name
 			location: #location
