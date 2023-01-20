@@ -27,4 +27,4 @@ _actions: {
 	[tenant=#aTenant]: #components & {#tenant: tenant}
 }
 
-#actions & {#componentActions: _actions}
+actions: #actions & {#componentActions: _actions}
