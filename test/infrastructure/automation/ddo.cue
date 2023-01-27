@@ -2,20 +2,20 @@ package actions
 
 // cue export ./test/infrastructure/automation
 
-#tenants: ["navutv", "navno"]
-#aTenant: or(#tenants)
+import (
+	g "ddo.test/test/infrastructure:global"
+)
 
-componentsPath: "./test/infrastructure"
-//componentsPath: ""
+_componentsPath: "./test/infrastructure"
 
 #components: {
-	#tenant: #aTenant
+	#tenant: g.#aTenantKey
 	rg: #component & {
-		folder: "resourceGroup"
+		folder: "\(_componentsPath)/resourceGroup"
 		tags: ["tenant=\(#tenant)"]
 	}
 	cr: #component &{
-		folder: "containerRegistry"
+		folder: "\(_componentsPath)/containerRegistry"
 		tags:["tenant=\(#tenant)"]
 	}
 }
@@ -23,8 +23,8 @@ componentsPath: "./test/infrastructure"
 deployOrder: [["rg"], ["cr"]]
 
 _actions: {
-	for t in #tenants {"\(t)": _}
-	[tenant=#aTenant]: #components & {#tenant: tenant}
+	for t in g.#tenants {"\(t)": _}
+	[tenant=g.#aTenantKey]: #components & {#tenant: tenant}
 }
 
 actions: #actions & {#componentActions: _actions}

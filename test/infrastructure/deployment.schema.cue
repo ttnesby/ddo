@@ -7,7 +7,7 @@ import (
 //########## 3 mandatory fields ##########
 
 	// bicep/arm file path, relative to repo root
-templatePath: #templatePath
+templatePath: #nonEmptyString
 // template parameters
 parameters: #jsonParameterFile
 // target for the deployment
@@ -15,7 +15,7 @@ target: #resourceGroup | #subscription | #managementGroup
 
 //########## schema ##########
 
-#templatePath: s={
+#nonEmptyString: s={
 	string
 	_len: len(s)
 	#valid: > 0 & _len
@@ -23,7 +23,7 @@ target: #resourceGroup | #subscription | #managementGroup
 
 // ResourceGroup target
 #resourceGroup: resourceGroup: {
-		name: string
+		name: #nonEmptyString
 		inSubscriptionId: #guid
 }
 
@@ -36,7 +36,7 @@ target: #resourceGroup | #subscription | #managementGroup
 // common properties for subscription and management group targets
 #base: {
 		id: #guid
-		location: string
+		location: #nonEmptyString
 }
 
 // string as guid type

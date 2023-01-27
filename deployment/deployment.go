@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"io"
-	"os"
 	"os/exec"
 	"strings"
 )
@@ -87,14 +86,10 @@ func (azCmd AzCli) IsWhatIf() bool {
 func (azCmd AzCli) Run() (byte []byte, e error) {
 
 	cmd := exec.Command(azCmd[0], azCmd[1:]...)
-	//out, err := cmd.CombinedOutput()
-	//if err != nil {
-	//	return nil, nil, fmt.Errorf("Run() for %v\nreturned error %s\n", azCmd, err)
-	//}
 
 	var stdoutBuf, stderrBuf bytes.Buffer
-	cmd.Stdout = io.MultiWriter(os.Stdout, &stdoutBuf)
-	cmd.Stderr = io.MultiWriter(os.Stderr, &stderrBuf)
+	cmd.Stdout = io.MultiWriter(&stdoutBuf) //os.Stdout
+	cmd.Stderr = io.MultiWriter(&stderrBuf) //os.Stderr
 
 	err := cmd.Run()
 	if err != nil {
@@ -102,16 +97,9 @@ func (azCmd AzCli) Run() (byte []byte, e error) {
 	}
 
 	out, errStr := stdoutBuf.Bytes(), string(stderrBuf.Bytes())
-	//fmt.Printf("\nout:\n%s\nerr:\n%s\n", out, errStr)
 	if errStr != "" {
 		return nil, fmt.Errorf("%v\nreturned error %s\n", azCmd, errStr)
 	}
-
-	// parse the output
-	//data := make(map[string]interface{})
-	//if err = yaml.Unmarshal(out, &data); err != nil {
-	//	return nil, nil, fmt.Errorf("yaml.Unmarshal() of %v\nreturned error %v\n", out, err)
-	//}
 
 	return out, nil
 }

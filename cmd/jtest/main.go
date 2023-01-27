@@ -1,181 +1,94 @@
 package main
 
 import (
-	"encoding/json"
+	"ddo/configuration"
 	"fmt"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"github.com/tidwall/gjson"
 	"os"
+	"strings"
+	"time"
 )
 
-//type Component struct {
-//	Folder string   `json:"folder"`
-//	Tags   []string `json:"tags"`
-//}
+type Component struct {
+	Folder string   `json:"folder"`
+	Tags   []string `json:"tags"`
+}
 
 func main() {
-	rawJson := `
-{
-    "componentsPath": "./test/infrastructure",
-    "componentOrder": [
-        [
-            "rg"
-        ],
-        [
-            "cr"
-        ]
-    ],
-    "actions": {
-        "ce": {
-            "navutv": {
-                "rg": {
-                    "folder": "resourceGroup",
-                    "tags": [
-                        "tenant=navutv"
-                    ]
-                },
-                "cr": {
-                    "folder": "containerRegistry",
-                    "tags": [
-                        "tenant=navutv"
-                    ]
-                }
-            },
-            "navno": {
-                "rg": {
-                    "folder": "resourceGroup",
-                    "tags": [
-                        "tenant=navno"
-                    ]
-                },
-                "cr": {
-                    "folder": "containerRegistry",
-                    "tags": [
-                        "tenant=navno"
-                    ]
-                }
-            }
-        },
-        "va": {
-            "navutv": {
-                "rg": {
-                    "folder": "resourceGroup",
-                    "tags": [
-                        "tenant=navutv"
-                    ]
-                },
-                "cr": {
-                    "folder": "containerRegistry",
-                    "tags": [
-                        "tenant=navutv"
-                    ]
-                }
-            },
-            "navno": {
-                "rg": {
-                    "folder": "resourceGroup",
-                    "tags": [
-                        "tenant=navno"
-                    ]
-                },
-                "cr": {
-                    "folder": "containerRegistry",
-                    "tags": [
-                        "tenant=navno"
-                    ]
-                }
-            }
-        },
-        "if": {
-            "navutv": {
-                "rg": {
-                    "folder": "resourceGroup",
-                    "tags": [
-                        "tenant=navutv"
-                    ]
-                },
-                "cr": {
-                    "folder": "containerRegistry",
-                    "tags": [
-                        "tenant=navutv"
-                    ]
-                }
-            },
-            "navno": {
-                "rg": {
-                    "folder": "resourceGroup",
-                    "tags": [
-                        "tenant=navno"
-                    ]
-                },
-                "cr": {
-                    "folder": "containerRegistry",
-                    "tags": [
-                        "tenant=navno"
-                    ]
-                }
-            }
-        },
-        "de": {
-            "navutv": {
-                "rg": {
-                    "folder": "resourceGroup",
-                    "tags": [
-                        "tenant=navutv"
-                    ]
-                },
-                "cr": {
-                    "folder": "containerRegistry",
-                    "tags": [
-                        "tenant=navutv"
-                    ]
-                }
-            },
-            "navno": {
-                "rg": {
-                    "folder": "resourceGroup",
-                    "tags": [
-                        "tenant=navno"
-                    ]
-                },
-                "cr": {
-                    "folder": "containerRegistry",
-                    "tags": [
-                        "tenant=navno"
-                    ]
-                }
-            }
-        }
-    }
+	exitCode := func() int {
+		if err := do(); err != nil {
+			return 1
+		}
+		return 0
+	}()
+	os.Exit(exitCode)
 }
-`
 
-	//type Operations struct {
-	//	Ce map[string]interface{} `json:"ce"`
-	//	Va map[string]interface{} `json:"va"`
-	//	If map[string]interface{} `json:"if"`
-	//	De map[string]interface{} `json:"de"`
-	//}
-	type Plan struct {
-		ComponentsPath string     `json:"componentsPath"`
-		ComponentOrder [][]string `json:"componentOrder"`
-		//Actions        Operations `json:"actions"`
-		Actions map[string]interface{} `json:"actions"`
+func do() error {
+
+	logError := func(e error) error {
+		log.Err(e).Msg("Error")
+		return e
 	}
 
-	var plan Plan
-	err := json.Unmarshal([]byte(rawJson), &plan)
+	const (
+		argProgramName = iota
+		argPathToActionSpecification
+		argActionsPath
+	)
+
+	log.Logger = (log.Output(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339})).With().Caller().Logger()
+
+	log.Info().Str("program", os.Args[argProgramName]).Msg("Start")
+	if len(os.Args) < argActionsPath+1 {
+		return logError(
+			fmt.Errorf(
+				"missing parameter(s) - usage: PROGRAM <path to action specification> <actions path>"))
+	}
+
+	rawJson, err := configuration.New(os.Args[argPathToActionSpecification], nil).AsJson()
+
 	if err != nil {
-		_ = fmt.Errorf("error unmarshalling json: %v", err)
-		os.Exit(1)
+		return logError(fmt.Errorf("failure getting ddo actions: %v", err))
 	}
-	fmt.Printf("Arguments: %v \n\n", os.Args[1:])
 
-	fmt.Printf("componentsPath: %s \n", plan.ComponentsPath)
-	fmt.Printf("componentOrder: %v \n", plan.ComponentOrder)
+	path := "actions." + strings.Join(os.Args[argActionsPath:], ".")
+	log.Info().Str("Action path", path).Msg("Resolve")
+	actions := gjson.GetBytes(rawJson, path+"|@pretty")
+	if !actions.Exists() {
+		return logError(fmt.Errorf("no such path: %v", path))
+	}
 
-	fmt.Printf("Available actions: \n")
-	printKeys(plan.Actions, 1, 2)
+	fmt.Printf("actions: %v \n", actions)
 
-	os.Exit(0)
+	//deployOrder := gjson.GetBytes(rawJson, "deployOrder")
+
+	// resolve path to slice of components
+	//var components []Component
+	_, ok := gjson.Parse(actions.String()).Value().(map[string]interface{})
+	if !ok {
+		return logError(fmt.Errorf("error parsing json"))
+	}
+
+	//for k, v := range m {
+	//	fmt.Printf("key: %v, value: %v\n", k, v)
+	//}
+
+	//var plan Plan
+	//err = json.Unmarshal(rawJson, &plan)
+	//if err != nil {
+	//	_ = fmt.Errorf("error unmarshalling json: %v", err)
+	//	os.Exit(1)
+	//}
+	//
+	//fmt.Printf("componentOrder: %v \n", plan.DeployOrder)
+	//
+	//fmt.Printf("Available actions: \n")
+	//printKeys(plan.Actions, 1, 2)
+	//
+	return nil
 }
 
 func objectIsComponent(v map[string]interface{}) bool {
@@ -196,9 +109,9 @@ func valueIsObject(v interface{}) (bool, map[string]interface{}) {
 func printKeys(m map[string]interface{}, level, padding int) {
 	for k, v := range m {
 		if level == 1 {
-			fmt.Printf("%*s\n", padding+len(k), k)
+			fmt.Printf("%*s:\n", padding+len(k), k)
 		} else if level == 2 {
-			fmt.Printf("%*s - ", padding+len(k), k)
+			fmt.Printf("%*s: ", padding+len(k), k)
 		} else {
 			fmt.Printf("%s ", k)
 		}

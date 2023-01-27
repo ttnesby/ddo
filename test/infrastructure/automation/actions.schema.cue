@@ -1,9 +1,13 @@
 package actions
 
+import (
+	"strings"
+)
+
 //########## 3 mandatory fields ##########
 
 // repo relative path to infrastructure components
-componentsPath: #componentsPath
+_componentsPath: #nonEmptyString
 // deploy order of infrastructure components
 deployOrder: [...#listOfComponents]
 // ce, va, if, de - and which additional configurations actions for infrastructure components should be possible
@@ -14,15 +18,20 @@ actions: #actions
 #operations: ["ce","va","if","de"]
 #anOperation: or(#operations)
 
-#componentsPath: s={
+#nonEmptyString: s={
 	string
 	_len: len(s)
 	#valid: > 0 & _len
 }
 
 #component: {
-	folder: string
+	folder: #folderPath
 	tags: [...string]
+}
+
+#folderPath: s={
+	string
+	#valid: strings.HasPrefix(s, _componentsPath + "/") & true
 }
 
 #components: close({[string]: #component})
@@ -37,5 +46,4 @@ actions: #actions
 	for o in #operations {"\(o)": _}
 	[operation=#anOperation]: #componentActions
 	... // extendable
-
 }

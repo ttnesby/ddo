@@ -37,7 +37,7 @@ _tenant: g.#aTenantKey @tag(tenant)
 	zoneRedundancy:      *"enabled" | #enabling // requires sku Premium
 }
 
-templatePath: "./test/containerRegistry/main.bicep"
+templatePath: "./test/infrastructure/containerRegistry/main.bicep"
 
 parameters: #jsonParameterFile & {
 		#s:  {

@@ -16,7 +16,6 @@ func main() {
 		}
 		return 0
 	}()
-	fmt.Printf("Exit code: %d\n", exitCode)
 	os.Exit(exitCode)
 }
 

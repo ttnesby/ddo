@@ -12,7 +12,7 @@ _tenant: g.#aTenantKey @tag(tenant)
 #location: g.#location.norwayeast
 #tags:     g.#tagsTemplate
 
-templatePath: "./infrastructure/resourceGroup/main.bicep"
+templatePath: "./test/infrastructure/resourceGroup/main.bicep"
 
 parameters: #jsonParameterFile & {
 		#s: {
