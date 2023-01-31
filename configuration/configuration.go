@@ -2,6 +2,7 @@ package configuration
 
 import (
 	"bytes"
+	"ddo/alogger"
 	"ddo/path"
 	"fmt"
 	"github.com/oklog/ulid/v2"
@@ -10,6 +11,8 @@ import (
 	"os/exec"
 	"path/filepath"
 )
+
+var l = alogger.New()
 
 type CueCli []string
 
@@ -36,6 +39,10 @@ func New(path string, tags []string) CueCli {
 
 func (cueCmd CueCli) AsJson() (byte []byte, e error) {
 	return append(cueCmd, "--out", "json").Run()
+}
+
+func (cueCmd CueCli) AsJsonCmd() (str []string) {
+	return append(cueCmd, "--out", "json")
 }
 
 func (cueCmd CueCli) AsYaml() (byte []byte, e error) {
@@ -68,6 +75,8 @@ func (cueCmd CueCli) ElementsToTmpJsonFile(elements []string) (absolutePath stri
 
 func (cueCmd CueCli) Run() (byte []byte, e error) {
 
+	l.Debugf("cueCmd: %v", cueCmd)
+
 	cmd := exec.Command(cueCmd[0], cueCmd[1:]...)
 	cmd.Dir = path.RepoRoot()
 
@@ -77,12 +86,12 @@ func (cueCmd CueCli) Run() (byte []byte, e error) {
 
 	err := cmd.Run()
 	if err != nil {
-		return nil, fmt.Errorf("cmd.Run() of %v\nfailed with %s\n", cueCmd, err)
+		return nil, l.Error(fmt.Errorf("%v failed: %s", cueCmd, err))
 	}
 
 	out, errStr := stdoutBuf.Bytes(), string(stderrBuf.Bytes())
 	if errStr != "" {
-		return nil, fmt.Errorf("%v\nreturned error %s\n", cueCmd, errStr)
+		return nil, l.Error(fmt.Errorf("%v returned: %s", cueCmd, errStr))
 	}
 
 	return bytes.TrimRight(out, "\r\n"), nil

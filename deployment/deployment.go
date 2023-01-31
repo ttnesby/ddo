@@ -2,6 +2,7 @@ package deployment
 
 import (
 	"bytes"
+	"ddo/alogger"
 	de "ddo/deployment/destination"
 	fp "ddo/path"
 	"fmt"
@@ -11,12 +12,17 @@ import (
 	"strings"
 )
 
+var l = alogger.New()
+
 type operation string
 
 const (
 	validate operation = "validate"
 	whatIf   operation = "create --what-if"
 	deploy   operation = "create"
+
+	whatIfStart = 3
+	whatIfEnd   = 5
 )
 
 type AzCli []string
@@ -80,11 +86,12 @@ func Deploy(templatePath, parameterPath string, destination ADestination) (AzCli
 
 func (azCmd AzCli) IsWhatIf() bool {
 	// !!observe, starting index : starting index + no of elements to get
-	return strings.Join(azCmd[3:5], " ") == string(whatIf)
+	return strings.Join(azCmd[whatIfStart:whatIfEnd], " ") == string(whatIf)
 }
 
 func (azCmd AzCli) Run() (byte []byte, e error) {
 
+	l.Debugf("azCmd: %v", azCmd)
 	cmd := exec.Command(azCmd[0], azCmd[1:]...)
 
 	var stdoutBuf, stderrBuf bytes.Buffer
@@ -93,12 +100,12 @@ func (azCmd AzCli) Run() (byte []byte, e error) {
 
 	err := cmd.Run()
 	if err != nil {
-		return nil, fmt.Errorf("cmd.Run() of %v\nfailed with %s\n", azCmd, err)
+		return nil, l.Error(fmt.Errorf("%v failed: %s", azCmd, err))
 	}
 
 	out, errStr := stdoutBuf.Bytes(), string(stderrBuf.Bytes())
 	if errStr != "" {
-		return nil, fmt.Errorf("%v\nreturned error %s\n", azCmd, errStr)
+		return nil, l.Error(fmt.Errorf("%v returned: %s", azCmd, errStr))
 	}
 
 	return out, nil

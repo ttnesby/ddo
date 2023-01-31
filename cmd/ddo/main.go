@@ -3,15 +3,20 @@ package main
 import (
 	"context"
 	"dagger.io/dagger"
+	"ddo/alogger"
+	"ddo/configuration"
 	"ddo/path"
 	"fmt"
+	"github.com/tidwall/gjson"
 	"os"
+	"strings"
 )
+
+var l = alogger.New()
 
 func main() {
 	exitCode := func() int {
 		if err := build(context.Background()); err != nil {
-			fmt.Println(err)
 			return 1
 		}
 		return 0
@@ -43,28 +48,42 @@ func hostDotAzure(c *dagger.Client) *dagger.Directory {
 func build(ctx context.Context) error {
 
 	const (
+		argProgramName = iota
+		argPathToActionSpecification
+		argActionsPath
+		argMinNo = argActionsPath + 1
+	)
+	const (
 		containerRef      = "docker.io/ttnesby/azbicue:latest"
 		containerDotAzure = "/root/.azure"
 		containerRepoRoot = "/rr"
 	)
 
-	fmt.Println("Start dagger client")
+	l.Infof("Start program: %v", os.Args[argProgramName])
+
+	if len(os.Args) < argMinNo {
+		return l.Error(
+			fmt.Errorf(
+				"missing parameter(s) - usage: PROGRAM <path to action specification> <actions path>"))
+	}
+
+	l.Infof("Start dagger client")
 	client, err := dagger.Connect(ctx)
 	if err != nil {
-		return err
+		return l.Error(err)
 	}
 
 	defer func(client *dagger.Client) {
 		_ = client.Close()
 	}(client)
 
-	fmt.Printf("Verify and connect to host repository %s\n", path.RepoRoot())
-	fmt.Printf("Verify and connect to host %s\n", getDotAzurePath())
+	l.Infof("Verify and connect to host repository %s\n", path.RepoRoot())
+	l.Infof("Verify and connect to host %s\n", getDotAzurePath())
 	if !path.AbsExists(getDotAzurePath()) {
-		return fmt.Errorf("folder %s does not exist", getDotAzurePath())
+		return l.Error(fmt.Errorf("folder %s does not exist", getDotAzurePath()))
 	}
 
-	fmt.Printf("Start container %s mounting [repo root, .azure]\n", containerRef)
+	l.Infof("Start container %s mounting [repo root, .azure]\n", containerRef)
 
 	azbicue := client.Container().
 		From(containerRef).
@@ -72,25 +91,24 @@ func build(ctx context.Context) error {
 		WithMountedDirectory(containerDotAzure, hostDotAzure(client)).
 		WithWorkdir(containerRepoRoot)
 
-	actionsCmd := []string{
-		"cue",
-		"export",
-		"-p",
-		"ddospec",
-		"./test/ddo.cue",
-		"./test/actions.schema.cue",
-	}
+	l.Infof("Reading action specification %v", os.Args[argPathToActionSpecification])
+	actionsCmd := configuration.New(os.Args[argPathToActionSpecification], nil).AsJsonCmd()
 
-	fmt.Printf("Reading action specification %v\n\n", actionsCmd)
 	actionsJson, err := azbicue.WithExec(actionsCmd).Stdout(ctx)
-
 	if err != nil {
-		return err
+		return l.Error(err)
 	}
 
-	fmt.Printf("%v", actionsJson)
+	actionsPath := "actions." + strings.Join(os.Args[argActionsPath:], ".")
+	l.Infof("Action path: %s", actionsPath)
+	actions := gjson.Get(actionsJson, actionsPath+"|@pretty")
+	if !actions.Exists() {
+		return l.Error(fmt.Errorf("no such path: %v", actionsPath))
+	}
 
-	println("Done!")
+	l.Infof("actions: \n%v ", actions)
+
+	l.Infof("Done!")
 
 	return nil
 }

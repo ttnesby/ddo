@@ -1,5 +1,12 @@
 # ddo
 
+## Clear cache once a while:
+
+build cache: `go clean -cache`
+
+test cache: `go clean -testcache`
+
+## Verbose tests:
 
 `go test -v ./... -tags=unit -count 10`
 

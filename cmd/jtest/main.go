@@ -1,20 +1,20 @@
 package main
 
 import (
+	"ddo/alogger"
 	"ddo/configuration"
 	"fmt"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"github.com/tidwall/gjson"
 	"os"
 	"strings"
-	"time"
 )
 
-type Component struct {
-	Folder string   `json:"folder"`
-	Tags   []string `json:"tags"`
-}
+var l = alogger.New() //.Caller()
+
+//type Component struct {
+//	Folder string   `json:"folder"`
+//	Tags   []string `json:"tags"`
+//}
 
 func main() {
 	exitCode := func() int {
@@ -28,22 +28,17 @@ func main() {
 
 func do() error {
 
-	logError := func(e error) error {
-		log.Err(e).Msg("Error")
-		return e
-	}
-
 	const (
 		argProgramName = iota
 		argPathToActionSpecification
 		argActionsPath
+		argMinNo = argActionsPath + 1
 	)
 
-	log.Logger = (log.Output(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339})).With().Caller().Logger()
+	l.Infof("Start program: %v", os.Args[argProgramName])
 
-	log.Info().Str("program", os.Args[argProgramName]).Msg("Start")
-	if len(os.Args) < argActionsPath+1 {
-		return logError(
+	if len(os.Args) < argMinNo {
+		return l.Error(
 			fmt.Errorf(
 				"missing parameter(s) - usage: PROGRAM <path to action specification> <actions path>"))
 	}
@@ -51,17 +46,17 @@ func do() error {
 	rawJson, err := configuration.New(os.Args[argPathToActionSpecification], nil).AsJson()
 
 	if err != nil {
-		return logError(fmt.Errorf("failure getting ddo actions: %v", err))
+		return l.Error(fmt.Errorf("failure getting ddo actions: %v", err))
 	}
 
 	path := "actions." + strings.Join(os.Args[argActionsPath:], ".")
-	log.Info().Str("Action path", path).Msg("Resolve")
+	l.Infof("Action path: %s", path)
 	actions := gjson.GetBytes(rawJson, path+"|@pretty")
 	if !actions.Exists() {
-		return logError(fmt.Errorf("no such path: %v", path))
+		return l.Error(fmt.Errorf("no such path: %v", path))
 	}
 
-	fmt.Printf("actions: %v \n", actions)
+	l.Infof("actions: \n%v ", actions)
 
 	//deployOrder := gjson.GetBytes(rawJson, "deployOrder")
 
@@ -69,7 +64,7 @@ func do() error {
 	//var components []Component
 	_, ok := gjson.Parse(actions.String()).Value().(map[string]interface{})
 	if !ok {
-		return logError(fmt.Errorf("error parsing json"))
+		return l.Error(fmt.Errorf("error parsing json"))
 	}
 
 	//for k, v := range m {
@@ -91,34 +86,34 @@ func do() error {
 	return nil
 }
 
-func objectIsComponent(v map[string]interface{}) bool {
-	_, hasFolder := v["folder"]
-	_, hasTags := v["tags"]
-	return hasFolder && hasTags
-}
+//func objectIsComponent(v map[string]interface{}) bool {
+//	_, hasFolder := v["folder"]
+//	_, hasTags := v["tags"]
+//	return hasFolder && hasTags
+//}
+//
+//func valueIsObject(v interface{}) (bool, map[string]interface{}) {
+//	switch value := v.(type) {
+//	case map[string]interface{}:
+//		return true, value
+//	default:
+//		return false, nil
+//	}
+//}
 
-func valueIsObject(v interface{}) (bool, map[string]interface{}) {
-	switch value := v.(type) {
-	case map[string]interface{}:
-		return true, value
-	default:
-		return false, nil
-	}
-}
-
-func printKeys(m map[string]interface{}, level, padding int) {
-	for k, v := range m {
-		if level == 1 {
-			fmt.Printf("%*s:\n", padding+len(k), k)
-		} else if level == 2 {
-			fmt.Printf("%*s: ", padding+len(k), k)
-		} else {
-			fmt.Printf("%s ", k)
-		}
-		isObject, value := valueIsObject(v)
-		if isObject && !objectIsComponent(value) {
-			printKeys(value, level+1, padding+2)
-		}
-	}
-	fmt.Println()
-}
+//func printKeys(m map[string]interface{}, level, padding int) {
+//	for k, v := range m {
+//		if level == 1 {
+//			fmt.Printf("%*s:\n", padding+len(k), k)
+//		} else if level == 2 {
+//			fmt.Printf("%*s: ", padding+len(k), k)
+//		} else {
+//			fmt.Printf("%s ", k)
+//		}
+//		isObject, value := valueIsObject(v)
+//		if isObject && !objectIsComponent(value) {
+//			printKeys(value, level+1, padding+2)
+//		}
+//	}
+//	fmt.Println()
+//}

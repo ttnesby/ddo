@@ -3,10 +3,12 @@
 package deployment_test
 
 import (
+	"ddo/alogger"
 	dep "ddo/deployment"
 	"ddo/path"
 	"fmt"
 	"github.com/google/go-cmp/cmp"
+	"os"
 	"testing"
 )
 
@@ -21,6 +23,14 @@ const (
 	invalidBicep  = "./test/n/a/invalid.bicep"
 	invalidParams = "./test/n/a/invalid.params.json"
 )
+
+func TestMain(m *testing.M) {
+	//setup
+	alogger.Disable()
+	code := m.Run()
+	//shutdown
+	os.Exit(code)
+}
 
 func destAndOps(templatePath, paramsPath string, aDest dep.ADestination) error {
 

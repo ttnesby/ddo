@@ -3,9 +3,11 @@
 package configuration_test
 
 import (
+	"ddo/alogger"
 	cf "ddo/configuration"
 	"ddo/path"
 	"github.com/google/go-cmp/cmp"
+	"os"
 	"testing"
 )
 
@@ -19,6 +21,14 @@ const (
 	rgName            = "container-registry"
 	invalidConfigPath = "./n/a"
 )
+
+func TestMain(m *testing.M) {
+	//setup
+	alogger.Disable()
+	code := m.Run()
+	//shutdown
+	os.Exit(code)
+}
 
 func TestConfigWithTags(t *testing.T) {
 	t.Parallel()
