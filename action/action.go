@@ -24,7 +24,7 @@ type component struct {
 	tags   []string
 }
 
-func Do(specificationPath, actionsPath string, ctx context.Context) (e error) {
+func Do(ctx context.Context) (e error) {
 
 	l.Infof("Start dagger client")
 	client, e := dagger.Connect(ctx)
@@ -46,15 +46,15 @@ func Do(specificationPath, actionsPath string, ctx context.Context) (e error) {
 		ctx:       ctx,
 	}
 
-	actionJson, e := getSpecification(specificationPath, cont)
+	actionJson, e := getSpecification(arg.ActionSpecification(), cont)
 	if e != nil {
 		return e
 	}
 
-	l.Infof("Get actions : %s", actionsPath)
-	actions := gjson.Get(actionJson, "actions."+actionsPath+"|@pretty")
+	l.Infof("Get actions : %s", arg.ActionsPath())
+	actions := gjson.Get(actionJson, "actions."+arg.ActionsPath()+"|@pretty")
 	if !actions.Exists() {
-		return l.Error(fmt.Errorf("no such path: %v", actionsPath))
+		return l.Error(fmt.Errorf("no such path: %v", arg.ActionsPath()))
 	}
 
 	if !gjson.Valid(actions.String()) {

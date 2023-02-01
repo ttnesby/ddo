@@ -12,10 +12,7 @@ func main() {
 	exitCode := func() int {
 		switch arg.AreOk() {
 		case true:
-			if err := action.Do(
-				arg.ActionSpecification(),
-				arg.ActionsPath(),
-				context.Background()); err != nil {
+			if err := action.Do(context.Background()); err != nil {
 				return 1
 			}
 			return 0
