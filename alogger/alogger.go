@@ -15,7 +15,8 @@ type ALogger struct {
 }
 
 func New() ALogger {
-	zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	//zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	return ALogger{
 		log.Output(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339}).
 			With().

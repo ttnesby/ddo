@@ -35,7 +35,7 @@ func addFlags(flag string, slice []string) []string {
 
 func New(path string, tags []string) (cmd CueCli) {
 	cmd = append([]string{"cue", "export", path}, addFlags("-t", tags)...)
-	l.Debugf("cueCmd: %v", cmd)
+	//l.Debugf("cueCmd: %v", cmd)
 	return cmd
 }
 

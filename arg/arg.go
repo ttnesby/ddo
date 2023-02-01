@@ -18,7 +18,7 @@ const (
 
 func AreOk() bool {
 	l.Infof("Start program: %v", os.Args[argProgramName])
-	l.Infof("Check path %v", os.Args[argPathToActionSpecification])
+	l.Debugf("Check path %v", os.Args[argPathToActionSpecification])
 
 	if !path.AbsExists(path.RepoAbs(os.Args[argPathToActionSpecification])) {
 		l.Errorf("cannot find %v", os.Args[argPathToActionSpecification])
@@ -39,4 +39,12 @@ func ActionSpecification() (relativePath string) {
 
 func ActionsPath() (actionPath string) {
 	return strings.Join(os.Args[argActionsPath:], ".")
+}
+
+func LastActions() []string {
+	if len(os.Args) == argMinNo {
+		return []string{}
+	} else {
+		return os.Args[argMinNo:]
+	}
 }
