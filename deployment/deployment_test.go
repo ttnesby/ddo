@@ -1,11 +1,10 @@
-//go:build unit
-
 package deployment_test
 
 import (
 	"ddo/alogger"
 	dep "ddo/deployment"
 	"ddo/path"
+	"ddo/util"
 	"fmt"
 	"github.com/google/go-cmp/cmp"
 	"os"
@@ -158,5 +157,60 @@ func TestDeploymentToManagementGroup(t *testing.T) {
 
 	if err := destAndOps(validBicep, validParams, dep.ManagementGroup(mgId, location)); err != nil {
 		t.Errorf("DeploymentToManagementGroup() failed: %v", err)
+	}
+}
+
+// integration tests
+
+const (
+	itLocation = "norwayeast"
+	itSubId    = "ca1e4592-6211-4c03-aac5-e681c1d1ea0d"
+	itBicep    = "./test/data/resourceGroup.bicep"
+	itJson     = "./test/data/resourceGroup.params.json"
+)
+
+func TestDeploymentSubscriptionValidate(t *testing.T) {
+	t.Parallel()
+
+	util.SkipIfNotLoggedIntoNAVUTV(t)
+
+	azCmd, err := dep.Validate(itBicep, itJson, dep.Subscription(itSubId, itLocation))
+	if err != nil {
+		t.Error(err)
+	}
+
+	if _, err = azCmd.Run(); err != nil {
+		t.Error(err)
+	}
+}
+
+// issue - something is wrong using exec - needs to be fixed
+func TestDeploymentSubscriptionWhatIf(t *testing.T) {
+	t.Parallel()
+
+	util.SkipIfNotLoggedIntoNAVUTV(t)
+
+	azCmd, err := dep.WhatIf(itBicep, itJson, dep.Subscription(itSubId, itLocation))
+	if err != nil {
+		t.Error(err)
+	}
+
+	if _, err = azCmd.Run(); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestDeploymentSubscriptionDeploy(t *testing.T) {
+	t.Parallel()
+
+	util.SkipIfNotLoggedIntoNAVUTV(t)
+
+	azCmd, err := dep.Deploy(itBicep, itJson, dep.Subscription(itSubId, itLocation))
+	if err != nil {
+		t.Error(err)
+	}
+
+	if _, err = azCmd.Run(); err != nil {
+		t.Error(err)
 	}
 }

@@ -1,15 +1,18 @@
-//go:build unit
-
 package path_test
 
 import (
 	"ddo/path"
+	"ddo/util"
 	"testing"
 )
 
 const (
 	bicepPath       = "./test/data/resourceGroup.bicep"
 	nonExistingPath = "./n/a/nonExistingFile.bicep"
+)
+
+const (
+	requiredCommand = "git"
 )
 
 func TestHome(t *testing.T) {
@@ -32,25 +35,33 @@ func TestHomeAbs(t *testing.T) {
 func TestRepoRoot(t *testing.T) {
 	t.Parallel()
 
+	util.SkipIfCommandNotAvailable(t, requiredCommand)
+
 	_ = path.RepoRoot()
 }
 
 func TestRepoAbs(t *testing.T) {
 	t.Parallel()
 
+	util.SkipIfCommandNotAvailable(t, requiredCommand)
+
 	_ = path.RepoAbs(bicepPath)
 }
 
-func TestAbsExists(t *testing.T) {
+func TestAbsExistsRepo(t *testing.T) {
 	t.Parallel()
+
+	util.SkipIfCommandNotAvailable(t, requiredCommand)
 
 	if !path.AbsExists(path.RepoAbs(bicepPath)) {
 		t.Error("want true for existing file, got false")
 	}
 }
 
-func TestAbsExistsInvalid(t *testing.T) {
+func TestAbsExistsInvalidRepo(t *testing.T) {
 	t.Parallel()
+
+	util.SkipIfCommandNotAvailable(t, requiredCommand)
 
 	if path.AbsExists(path.RepoAbs(nonExistingPath)) {
 		t.Error("want false for non-existing file, got true")

@@ -33,44 +33,48 @@ func addFlags(flag string, slice []string) []string {
 	return adder(nil, slice)
 }
 
-func New(path string, tags []string) CueCli {
-	return append([]string{"cue", "export", path}, addFlags("-t", tags)...)
+func New(path string, tags []string) (cmd CueCli) {
+	cmd = append([]string{"cue", "export", path}, addFlags("-t", tags)...)
+	l.Debugf("cueCmd: %v", cmd)
+	return cmd
 }
 
-func (cueCmd CueCli) AsJson() (byte []byte, e error) {
-	return append(cueCmd, "--out", "json").Run()
+func (cueCmd CueCli) AsJson() (cmd CueCli) {
+	cmd = append(cueCmd, "--out", "json")
+	l.Debugf("cueCmd: %v", cmd)
+	return cmd
 }
 
-func (cueCmd CueCli) AsJsonCmd() (str []string) {
-	return append(cueCmd, "--out", "json")
+func (cueCmd CueCli) AsYaml() (cmd CueCli) {
+	cmd = append(cueCmd, "--out", "yaml")
+	l.Debugf("cueCmd: %v", cmd)
+	return cmd
 }
 
-func (cueCmd CueCli) AsYaml() (byte []byte, e error) {
-	return append(cueCmd, "--out", "yaml").Run()
+func (cueCmd CueCli) ElementsAsJson(elements []string) (cmd CueCli) {
+	cmd = append(append(cueCmd, addFlags("-e", elements)...), "--out", "json")
+	l.Debugf("cueCmd: %v", cmd)
+	return cmd
 }
 
-func (cueCmd CueCli) ElementsAsJson(elements []string) (byte []byte, e error) {
-	return append(append(cueCmd, addFlags("-e", elements)...), "--out", "json").Run()
+func (cueCmd CueCli) ElementsAsText(elements []string) (cmd CueCli) {
+	cmd = append(append(cueCmd, addFlags("-e", elements)...), "--out", "text")
+	l.Debugf("cueCmd: %v", cmd)
+	return cmd
 }
 
-func (cueCmd CueCli) ElementsAsText(elements []string) (byte []byte, e error) {
-	return append(append(cueCmd, addFlags("-e", elements)...), "--out", "text").Run()
-}
-
-func (cueCmd CueCli) ElementsToTmpJsonFile(elements []string) (absolutePath string, e error) {
-	absPath := filepath.Join(
+func (cueCmd CueCli) ElementsToTmpJsonFile(elements []string) (cmd CueCli, absolutePath string) {
+	absolutePath = filepath.Join(
 		os.TempDir(),
 		fmt.Sprintf("ddo.parameters.%s.json", ulid.Make().String()),
 	)
-	_, err := append(
+	cmd = append(
 		append(cueCmd, addFlags("-e", elements)...),
-		"--out", "json", "--outfile", absPath,
-	).Run()
+		"--out", "json", "--outfile", absolutePath,
+	)
 
-	if err != nil {
-		return "", err
-	}
-	return absPath, nil
+	l.Debugf("cueCmd: %v", cmd)
+	return cmd, absolutePath
 }
 
 func (cueCmd CueCli) Run() (byte []byte, e error) {

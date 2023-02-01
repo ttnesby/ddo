@@ -1,6 +1,7 @@
 package alogger
 
 import (
+	"fmt"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"os"
@@ -14,6 +15,7 @@ type ALogger struct {
 }
 
 func New() ALogger {
+	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	return ALogger{
 		log.Output(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339}).
 			With().
@@ -33,6 +35,10 @@ func (aLogger ALogger) Infof(format string, v ...interface{}) {
 func (aLogger ALogger) Error(e error) error {
 	aLogger.Err(e).Send()
 	return e
+}
+
+func (aLogger ALogger) Errorf(format string, v ...interface{}) {
+	aLogger.Err(fmt.Errorf(format, v...)).Send()
 }
 
 func (aLogger ALogger) Debugf(format string, v ...interface{}) {

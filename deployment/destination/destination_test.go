@@ -1,5 +1,3 @@
-//go:build unit
-
 package destination_test
 
 import (
