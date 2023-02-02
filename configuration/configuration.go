@@ -5,11 +5,8 @@ import (
 	"ddo/alogger"
 	"ddo/path"
 	"fmt"
-	"github.com/oklog/ulid/v2"
 	"io"
-	"os"
 	"os/exec"
-	"path/filepath"
 )
 
 var l = alogger.New()
@@ -63,18 +60,18 @@ func (cueCmd CueCli) ElementsAsText(elements []string) (cmd CueCli) {
 	return cmd
 }
 
-func (cueCmd CueCli) ElementsToTmpJsonFile(elements []string) (cmd CueCli, absolutePath string) {
-	absolutePath = filepath.Join(
-		os.TempDir(),
-		fmt.Sprintf("ddo.parameters.%s.json", ulid.Make().String()),
-	)
+func (cueCmd CueCli) ElementsToTmpJsonFile(absolutePath string, elements []string) (cmd CueCli) {
+	//absolutePath = filepath.Join(
+	//	os.TempDir(),
+	//	fmt.Sprintf("ddo.parameters.%s.json", ulid.Make().String()),
+	//)
 	cmd = append(
 		append(cueCmd, addFlags("-e", elements)...),
 		"--out", "json", "--outfile", absolutePath,
 	)
 
 	l.Debugf("cueCmd: %v", cmd)
-	return cmd, absolutePath
+	return cmd
 }
 
 func (cueCmd CueCli) Run() (byte []byte, e error) {

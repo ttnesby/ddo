@@ -6,9 +6,12 @@ import (
 	"ddo/alogger"
 	"ddo/arg"
 	"ddo/configuration"
+	dep "ddo/deployment"
 	"ddo/path"
 	"fmt"
 	"github.com/tidwall/gjson"
+	"strings"
+	"sync"
 )
 
 var l = alogger.New()
@@ -61,29 +64,175 @@ func Do(ctx context.Context) (e error) {
 		return l.Error(fmt.Errorf("resulting json-actions from path is invalid"))
 	}
 
-	l.Debugf("Actions \n%v ", actions)
-
 	l.Debugf("Parse actions")
 	components := parse(arg.LastActions(), actions)
-
 	l.Debugf("Components: %v", components)
-
-	doComponents(components, cont)
+	doComponents(arg.Operation(), components, cont)
 
 	l.Infof("Done!")
 
 	return nil
 }
 
-func doComponents(components []component, c conctx) {
+func configExport(component component, c conctx, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	yaml, err := c.exec(configuration.New(component.folder, component.tags).AsYaml())
+	if err != nil {
+		l.Errorf("component %v with failing config \n%v", component.path, err)
+	} else {
+		l.Infof("Component %v \n%v", component.path, yaml)
+	}
+}
+
+func configValidate(component component, c conctx, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	templatePath, toJsonCmd, tmpFile, destination, err := componentDetails(component, c)
+	if err != nil {
+		return
+	}
+
+	c.container = c.container.WithExec(toJsonCmd) // need the updated container with tmp file for az cli cmd
+
+	azCmd, err := dep.Validate(templatePath, tmpFile, destination)
+	if err != nil {
+		l.Errorf("could not create az cli validation command %v", err)
+		return
+	}
+
+	yaml, err := c.exec(azCmd)
+	if err != nil {
+		l.Errorf("Component %v with failing validation \n%v", component.path, err)
+	} else {
+		l.Infof("Component %v \n%v", component.path, yaml)
+	}
+}
+
+func configWhatIf(component component, c conctx, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	templatePath, toJsonCmd, tmpFile, destination, err := componentDetails(component, c)
+	if err != nil {
+		return
+	}
+
+	c.container = c.container.WithExec(toJsonCmd) // need the updated container with tmp file for az cli cmd
+
+	azCmd, err := dep.WhatIf(templatePath, tmpFile, destination)
+	if err != nil {
+		l.Errorf("could not create az cli validation command %v", err)
+		return
+	}
+
+	yaml, err := c.exec(azCmd)
+	if err != nil {
+		l.Errorf("Component %v with failing validation \n%v", component.path, err)
+	} else {
+		l.Infof("Component %v \n%v", component.path, yaml)
+	}
+}
+
+func configDeploy(component component, c conctx, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	templatePath, toJsonCmd, tmpFile, destination, err := componentDetails(component, c)
+	if err != nil {
+		return
+	}
+
+	c.container = c.container.WithExec(toJsonCmd) // need the updated container with tmp file for az cli cmd
+
+	azCmd, err := dep.Deploy(templatePath, tmpFile, destination)
+	if err != nil {
+		l.Errorf("could not create az cli validation command %v", err)
+		return
+	}
+
+	yaml, err := c.exec(azCmd)
+	if err != nil {
+		l.Errorf("Component %v with failing validation \n%v", component.path, err)
+	} else {
+		l.Infof("Component %v \n%v", component.path, yaml)
+	}
+}
+
+func componentDetails(component component, c conctx) (
+	templatePath string,
+	toJsonCmd configuration.CueCli,
+	tmpFile string,
+	destination dep.ADestination,
+	e error) {
+
+	anError := func(err error) (string, configuration.CueCli, string, dep.ADestination, error) {
+		return "", configuration.CueCli{}, "", nil, l.Error(err)
+	}
+
+	config := configuration.New(component.folder, component.tags)
+
+	// template path
+	templatePath, err := c.exec(config.ElementsAsText([]string{"templatePath"}))
+	if err != nil {
+		return anError(fmt.Errorf("could not extract templatePath %v", err))
+	}
+	l.Debugf("templatePath: %v", templatePath)
+
+	// target
+	targetJson, err := c.exec(config.ElementsAsJson([]string{"target"}))
+	if err != nil {
+		return anError(fmt.Errorf("could not extract target %v", err))
+	}
+	l.Debugf("targetJson: %v", targetJson)
+
+	// parameters as json file
+	tmpFile = path.ContainerTmpJson()
+	toJsonCmd = config.ElementsToTmpJsonFile(tmpFile, []string{"parameters"})
+
+	return templatePath, toJsonCmd, tmpFile, resolveTarget(targetJson), nil
+}
+
+func resolveTarget(json string) dep.ADestination {
+	if gjson.Get(json, "resourceGroup").Exists() {
+		return dep.ResourceGroup(
+			gjson.Get(json, "resourceGroup.name").String(),
+			gjson.Get(json, "resourceGroup.inSubscriptionId").String(),
+		)
+	} else if gjson.Get(json, "subscription").Exists() {
+		return dep.Subscription(
+			gjson.Get(json, "subscription.id").String(),
+			gjson.Get(json, "subscription.location").String(),
+		)
+	} else {
+		return dep.ManagementGroup(
+			gjson.Get(json, "managementGroup.id").String(),
+			gjson.Get(json, "managementGroup.location").String(),
+		)
+	}
+}
+
+func doComponents(operation string, components []component, c conctx) {
+
+	var wg sync.WaitGroup
+	wg.Add(len(components))
+
 	for _, component := range components {
-		yaml, err := c.exec(configuration.New(component.folder, component.tags).AsYaml())
-		if err != nil {
-			l.Errorf("Component %v with failing config \n%v", component.path, err)
-		} else {
-			l.Infof("Component %v \n%v", component.path, yaml)
+		switch operation {
+		case "ce":
+			go configExport(component, c, &wg)
+		case "va":
+			go configValidate(component, c, &wg)
+		case "if":
+			go configWhatIf(component, c, &wg)
+		case "de":
+			//TODO Need to manage dependencies between components
+			go configDeploy(component, c, &wg)
+		default:
+			l.Errorf("Operation %v not supported", operation)
+			wg.Done()
 		}
 	}
+
+	wg.Wait()
 }
 
 func parse(lastActions []string, json gjson.Result) (components []component) {
@@ -145,7 +294,8 @@ func getSpecification(specificationPath string, c conctx) (actionJson string, e 
 }
 
 func (c conctx) exec(cmd []string) (stdout string, e error) {
-	return c.container.WithExec(cmd).Stdout(c.ctx)
+	r, err := c.container.WithExec(cmd).Stdout(c.ctx)
+	return strings.TrimRight(r, "\r\n"), err
 }
 
 func getContainer(client *dagger.Client) (*dagger.Container, error) {
@@ -156,13 +306,13 @@ func getContainer(client *dagger.Client) (*dagger.Container, error) {
 		containerRepoRoot = "/rr"
 	)
 
-	l.Debugf("Verify and connect to host repository %s\n", path.RepoRoot())
-	l.Debugf("Verify and connect to host %s\n", getDotAzurePath())
+	l.Debugf("Verify and connect to host repository %s", path.RepoRoot())
+	l.Debugf("Verify and connect to host %s", getDotAzurePath())
 	if !path.AbsExists(getDotAzurePath()) {
 		return nil, l.Error(fmt.Errorf("folder %s does not exist", getDotAzurePath()))
 	}
 
-	l.Debugf("Start container %s mounting [repo root, .azure]\n", containerRef)
+	l.Debugf("Start container %s mounting [repo root, .azure]", containerRef)
 
 	return client.Container().
 		From(containerRef).

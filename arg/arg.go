@@ -33,6 +33,10 @@ func AreOk() bool {
 	return true
 }
 
+func Operation() string {
+	return os.Args[argActionsPath]
+}
+
 func ActionSpecification() (relativePath string) {
 	return os.Args[argPathToActionSpecification]
 }

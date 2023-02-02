@@ -2,6 +2,7 @@ package path
 
 import (
 	"fmt"
+	"github.com/oklog/ulid/v2"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -46,4 +47,8 @@ func RepoAbs(relativePath string) string {
 func AbsExists(absolutePath string) bool {
 	_, err := os.Stat(absolutePath)
 	return err == nil
+}
+
+func ContainerTmpJson() string {
+	return filepath.Join("/tmp", fmt.Sprintf("ddo.parameters.%s.json", ulid.Make().String()))
 }

@@ -49,7 +49,9 @@ func azDeploy(op operation, templatePath, parameterPath string, destination ADes
 	azCmd = append(azCmd, strings.Split(string(op), " ")...) // due to whatIf
 	azCmd = append(azCmd, "--name", name(tfp+pfp))
 	azCmd = append(azCmd, destParams...)
-	azCmd = append(azCmd, "--template-file", tfp, "--parameters", "@"+pfp, "--out", "yaml")
+	azCmd = append(azCmd, "--template-file", templatePath, "--parameters", "@"+parameterPath, "--out", "yaml")
+
+	l.Debugf("azCmd: %v", azCmd)
 
 	return azCmd, nil
 }
