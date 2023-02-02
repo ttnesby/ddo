@@ -10,6 +10,7 @@ import (
 	"ddo/path"
 	"fmt"
 	"github.com/tidwall/gjson"
+	"os"
 	"strings"
 	"sync"
 )
@@ -30,7 +31,7 @@ type component struct {
 func Do(ctx context.Context) (e error) {
 
 	l.Infof("Start dagger client")
-	client, e := dagger.Connect(ctx)
+	client, e := dagger.Connect(ctx, dagger.WithLogOutput(os.Stdout))
 	if e != nil {
 		return l.Error(e)
 	}
