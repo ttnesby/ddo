@@ -14,6 +14,13 @@ import (
 	"sync"
 )
 
+const (
+	opCE = "ce"
+	opVA = "va"
+	opIF = "if"
+	opDE = "de"
+)
+
 var l = alogger.New()
 
 type conctx struct {
@@ -75,15 +82,51 @@ func Do(ctx context.Context) (e error) {
 	l.Debugf("Parse actions")
 	components := parse(arg.LastActions(), actions)
 	l.Debugf("Components: %v", components)
-	//TODO Need to manage dependencies between components
 
-	if e = doComponents(arg.Operation(), components, cont); e != nil {
+	orderedComponents, e := orderComponents(components, actionJson)
+	if e != nil {
+		return e
+	}
+	l.Debugf("Ordered components %v", orderedComponents)
+
+	if e = doComponents(arg.Operation(), orderedComponents, cont); e != nil {
 		return e
 	}
 
 	l.Infof("Done!")
 
 	return nil
+}
+
+func orderComponents(components []component, json string) (ordCo [][]component, e error) {
+
+	l.Debugf("Order components %v", components)
+	deployOrder := gjson.Get(json, "deployOrder"+"|@pretty")
+	if !deployOrder.Exists() {
+		return nil, l.Error(fmt.Errorf("no deployOrder in ddo.cue"))
+	}
+
+	if !gjson.Valid(deployOrder.String()) {
+		return nil, l.Error(fmt.Errorf("resulting json-deployOrder from path is invalid"))
+	}
+
+	// make a list where each element is a list of components that can be deployed in parallel
+	for _, le := range deployOrder.Array() {
+		var group []component
+		for _, co := range le.Array() {
+			for _, c := range components {
+				noOfPathElems := len(c.path)
+				if c.path[noOfPathElems-1] == co.String() {
+					group = append(group, c)
+				}
+			}
+		}
+		ordCo = append(ordCo, group)
+	}
+
+	l.Debugf("Ordered components %v", ordCo)
+
+	return ordCo, nil
 }
 
 func configExport(component component, signalError chan<- bool, c conctx, wg *sync.WaitGroup) {
@@ -132,29 +175,7 @@ func configAzCmd(
 	}
 }
 
-func doComponents(operation string, components []component, c conctx) error {
-
-	var (
-		cwg sync.WaitGroup
-		mu  sync.Mutex
-	)
-
-	signalError := make(chan bool)
-
-	noOfErrors := 0
-	stopListening := false
-
-	go func() {
-		for {
-			<-signalError
-			mu.Lock()
-			noOfErrors++
-			mu.Unlock()
-			if stopListening {
-				break
-			}
-		}
-	}()
+func doComponents(operation string, components [][]component, c conctx) error {
 
 	validate := func(template, parameters string, dst dep.ADestination) (dep.AzCli, error) {
 		return dep.Validate(template, parameters, dst)
@@ -168,28 +189,51 @@ func doComponents(operation string, components []component, c conctx) error {
 		return dep.Deploy(template, parameters, dst)
 	}
 
-	for _, component := range components {
-		switch operation {
-		case "ce":
-			cwg.Add(1)
-			go configExport(component, signalError, c, &cwg)
-		case "va":
-			cwg.Add(1)
-			go configAzCmd(component, validate, signalError, c, &cwg)
-		case "if":
-			cwg.Add(1)
-			go configAzCmd(component, whatif, signalError, c, &cwg)
-		case "de":
-			cwg.Add(1)
-			go configAzCmd(component, deploy, signalError, c, &cwg)
-		default:
-			l.Errorf("Operation %v not supported", operation)
-		}
-	}
+	var mu sync.Mutex
+	noOfErrors := 0
 
-	cwg.Wait()
-	stopListening = true
-	close(signalError)
+	for _, group := range components {
+
+		var cwg sync.WaitGroup
+
+		signalError := make(chan bool)
+		stopListening := false
+
+		go func() {
+			for {
+				<-signalError
+				if stopListening {
+					break
+				}
+				mu.Lock()
+				noOfErrors++
+				mu.Unlock()
+			}
+		}()
+
+		for _, component := range group {
+			switch operation {
+			case opCE:
+				cwg.Add(1)
+				go configExport(component, signalError, c, &cwg)
+			case opVA:
+				cwg.Add(1)
+				go configAzCmd(component, validate, signalError, c, &cwg)
+			case opIF:
+				cwg.Add(1)
+				go configAzCmd(component, whatif, signalError, c, &cwg)
+			case opDE:
+				cwg.Add(1)
+				go configAzCmd(component, deploy, signalError, c, &cwg)
+			default:
+				l.Errorf("Operation %v not supported", operation)
+			}
+		}
+
+		cwg.Wait()
+		stopListening = true
+		close(signalError)
+	}
 
 	if noOfErrors > 0 {
 		return l.Error(fmt.Errorf("%v component(s) failed", noOfErrors))
