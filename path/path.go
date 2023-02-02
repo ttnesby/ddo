@@ -1,6 +1,7 @@
 package path
 
 import (
+	"ddo/alogger"
 	"fmt"
 	"github.com/oklog/ulid/v2"
 	"os"
@@ -8,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 )
+
+var l = alogger.New()
 
 // Home returns the absolute path of the home directory.
 func Home() string {
@@ -51,4 +54,34 @@ func AbsExists(absolutePath string) bool {
 
 func ContainerTmpJson() string {
 	return filepath.Join("/tmp", fmt.Sprintf("ddo.parameters.%s.json", ulid.Make().String()))
+}
+
+func ActionSpecification() (path []string) {
+
+	var foundPaths []string
+
+	absToRelative := func(absPath, fileName string) (relativePath string) {
+		//TODO fix err handling
+		relativePath, _ = filepath.Rel(RepoRoot(), strings.TrimSuffix(absPath, fileName))
+		return "./" + filepath.Clean(relativePath)
+	}
+
+	err := filepath.Walk(RepoRoot(), func(path string, info os.FileInfo, err error) error {
+
+		if err != nil {
+			l.Errorf("filepath.Walk() error: %v", err)
+			return nil
+		}
+
+		if !info.IsDir() && info.Name() == "ddo.cue" {
+			foundPaths = append(foundPaths, absToRelative(path, info.Name()))
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		l.Errorf("ActionSpecification() error: %v", err)
+	}
+	return foundPaths
 }

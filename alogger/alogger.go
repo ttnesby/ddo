@@ -15,6 +15,7 @@ type ALogger struct {
 }
 
 func New() ALogger {
+	//TODO need to add flag to enable debug mode
 	//zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	return ALogger{

@@ -2,7 +2,6 @@ package arg
 
 import (
 	"ddo/alogger"
-	"ddo/path"
 	"os"
 	"strings"
 )
@@ -11,22 +10,31 @@ var l = alogger.New()
 
 const (
 	argProgramName = iota
-	argPathToActionSpecification
 	argActionsPath
 	argMinNo = argActionsPath + 1
 )
 
 func AreOk() bool {
 	l.Infof("Start program: %v", os.Args[argProgramName])
-	l.Debugf("Check path %v", os.Args[argPathToActionSpecification])
-
-	if !path.AbsExists(path.RepoAbs(os.Args[argPathToActionSpecification])) {
-		l.Errorf("cannot find %v", os.Args[argPathToActionSpecification])
-		return false
-	}
 
 	if len(os.Args) < argMinNo {
-		l.Errorf("missing parameter(s) - usage: PROGRAM <path to action specification> <actions path...>")
+		l.Errorf("missing parameter(s)")
+		l.Infof(`\n
+usage: ddo <operation> <actions path...>
+
+<operation> - one of: ce, va, if, de
+ce - config export
+va - validate config against azure
+if - what-if analysis against azure
+de - deploy to azure
+
+<actions path...> - path to component in ddo.cue file, 
+
+e.g. 
+- "ddo ce navutv rg" for config export of navutv and component rg 
+- "ddo ce navutv" for config export of all components in navutv
+- "ddo if" for what-if of all components in all tenants
+`)
 		return false
 	}
 
@@ -35,10 +43,6 @@ func AreOk() bool {
 
 func Operation() string {
 	return os.Args[argActionsPath]
-}
-
-func ActionSpecification() (relativePath string) {
-	return os.Args[argPathToActionSpecification]
 }
 
 func ActionsPath() (actionPath string) {
