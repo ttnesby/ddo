@@ -64,10 +64,6 @@ func (cueCmd CueCli) ElementsAsText(elements []string) (cmd CueCli) {
 }
 
 func (cueCmd CueCli) ElementsToTmpJsonFile(absolutePath string, elements []string) (cmd CueCli) {
-	//absolutePath = filepath.Join(
-	//	os.TempDir(),
-	//	fmt.Sprintf("ddo.parameters.%s.json", ulid.Make().String()),
-	//)
 	cmd = append(
 		append(cueCmd, addFlags("-e", elements)...),
 		"--out", "json", "--outfile", absolutePath,

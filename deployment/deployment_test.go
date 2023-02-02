@@ -77,9 +77,9 @@ func destAndOps(templatePath, paramsPath string, aDest dep.ADestination) error {
 					destParams[2],
 					destParams[3],
 					"--template-file",
-					tfp,
+					templatePath,
 					"--parameters",
-					"@" + pfp,
+					"@" + paramsPath,
 					"--out",
 					"yaml",
 				}
@@ -96,9 +96,9 @@ func destAndOps(templatePath, paramsPath string, aDest dep.ADestination) error {
 					destParams[2],
 					destParams[3],
 					"--template-file",
-					tfp,
+					templatePath,
 					"--parameters",
-					"@" + pfp,
+					"@" + paramsPath,
 					"--out",
 					"yaml",
 				}

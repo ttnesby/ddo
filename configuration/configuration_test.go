@@ -5,8 +5,11 @@ import (
 	cf "ddo/configuration"
 	"ddo/path"
 	"ddo/util"
+	"fmt"
 	"github.com/google/go-cmp/cmp"
+	"github.com/oklog/ulid/v2"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -129,8 +132,13 @@ func TestConfigElementsToTmpJsonFile(t *testing.T) {
 
 	util.SkipIfCommandNotAvailable(t, requiredCommand)
 
+	absolutePath := filepath.Join(
+		os.TempDir(),
+		fmt.Sprintf("ddo.parameters.%s.json", ulid.Make().String()),
+	)
+
 	config := cf.New(rgConfigPath, []string{tagTenantNAVUtv})
-	cmd, absPath := config.ElementsToTmpJsonFile([]string{iElemParameters})
+	cmd := config.ElementsToTmpJsonFile(absolutePath, []string{iElemParameters})
 
 	_, err := cmd.Run()
 
@@ -138,7 +146,7 @@ func TestConfigElementsToTmpJsonFile(t *testing.T) {
 		t.Errorf("could not extract config elements to json file - %v", err)
 	}
 
-	if !path.AbsExists(absPath) {
+	if !path.AbsExists(absolutePath) {
 		t.Errorf("Cannot find json file - %v", config)
 	}
 }
