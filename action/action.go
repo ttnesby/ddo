@@ -75,27 +75,33 @@ func Do(ctx context.Context) (e error) {
 	l.Debugf("Parse actions")
 	components := parse(arg.LastActions(), actions)
 	l.Debugf("Components: %v", components)
-	doComponents(arg.Operation(), components, cont)
+	//TODO Need to manage dependencies between components
+
+	if e = doComponents(arg.Operation(), components, cont); e != nil {
+		return e
+	}
 
 	l.Infof("Done!")
 
 	return nil
 }
 
-func configExport(component component, c conctx, wg *sync.WaitGroup) {
+func configExport(component component, signalError chan<- bool, c conctx, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	yaml, err := c.exec(configuration.New(component.folder, component.tags).AsYaml())
 	if err != nil {
-		l.Errorf("component %v with failing config \n%v", component.path, err)
+		l.Errorf("%v failed \n%v", component.path, err)
+		signalError <- true
 	} else {
-		l.Infof("Component %v \n%v", component.path, yaml)
+		l.Infof("%v \n%v", component.path, yaml)
 	}
 }
 
 func configAzCmd(
 	component component,
 	getAzCmd func(string, string, dep.ADestination) (dep.AzCli, error),
+	signalError chan<- bool,
 	c conctx,
 	wg *sync.WaitGroup) {
 
@@ -103,6 +109,7 @@ func configAzCmd(
 
 	templatePath, toJsonCmd, tmpFile, destination, err := componentDetails(component, c)
 	if err != nil {
+		signalError <- true
 		return
 	}
 
@@ -110,17 +117,84 @@ func configAzCmd(
 
 	azCmd, err := getAzCmd(templatePath, tmpFile, destination)
 	if err != nil {
+		signalError <- true
 		l.Errorf("%v failed\n%v", component.path, err)
 		return
 	}
 
 	yaml, err := c.exec(azCmd)
 	if err != nil {
+		signalError <- true
 		l.Errorf("%v failed\n%v", component.path, err)
 	} else {
 		//l.Infof("%v done", component.path)
 		l.Infof("%v \n%v", component.path, yaml)
 	}
+}
+
+func doComponents(operation string, components []component, c conctx) error {
+
+	var (
+		cwg sync.WaitGroup
+		mu  sync.Mutex
+	)
+
+	signalError := make(chan bool)
+
+	noOfErrors := 0
+	stopListening := false
+
+	go func() {
+		for {
+			<-signalError
+			mu.Lock()
+			noOfErrors++
+			mu.Unlock()
+			if stopListening {
+				break
+			}
+		}
+	}()
+
+	validate := func(template, parameters string, dst dep.ADestination) (dep.AzCli, error) {
+		return dep.Validate(template, parameters, dst)
+	}
+
+	whatif := func(template, parameters string, dst dep.ADestination) (dep.AzCli, error) {
+		return dep.WhatIf(template, parameters, dst)
+	}
+
+	deploy := func(template, parameters string, dst dep.ADestination) (dep.AzCli, error) {
+		return dep.Deploy(template, parameters, dst)
+	}
+
+	for _, component := range components {
+		switch operation {
+		case "ce":
+			cwg.Add(1)
+			go configExport(component, signalError, c, &cwg)
+		case "va":
+			cwg.Add(1)
+			go configAzCmd(component, validate, signalError, c, &cwg)
+		case "if":
+			cwg.Add(1)
+			go configAzCmd(component, whatif, signalError, c, &cwg)
+		case "de":
+			cwg.Add(1)
+			go configAzCmd(component, deploy, signalError, c, &cwg)
+		default:
+			l.Errorf("Operation %v not supported", operation)
+		}
+	}
+
+	cwg.Wait()
+	stopListening = true
+	close(signalError)
+
+	if noOfErrors > 0 {
+		return l.Error(fmt.Errorf("%v component(s) failed", noOfErrors))
+	}
+	return nil
 }
 
 func componentDetails(component component, c conctx) (
@@ -174,45 +248,6 @@ func resolveTarget(json string) dep.ADestination {
 			gjson.Get(json, "managementGroup.location").String(),
 		)
 	}
-}
-
-func doComponents(operation string, components []component, c conctx) {
-
-	var cwg sync.WaitGroup
-
-	validate := func(template, parameters string, dst dep.ADestination) (dep.AzCli, error) {
-		return dep.Validate(template, parameters, dst)
-	}
-
-	whatif := func(template, parameters string, dst dep.ADestination) (dep.AzCli, error) {
-		return dep.WhatIf(template, parameters, dst)
-	}
-
-	deploy := func(template, parameters string, dst dep.ADestination) (dep.AzCli, error) {
-		return dep.Deploy(template, parameters, dst)
-	}
-
-	for _, component := range components {
-		switch operation {
-		case "ce":
-			cwg.Add(1)
-			go configExport(component, c, &cwg)
-		case "va":
-			cwg.Add(1)
-			go configAzCmd(component, validate, c, &cwg)
-		case "if":
-			cwg.Add(1)
-			go configAzCmd(component, whatif, c, &cwg)
-		case "de":
-			cwg.Add(1)
-			//TODO Need to manage dependencies between components
-			go configAzCmd(component, deploy, c, &cwg)
-		default:
-			l.Errorf("Operation %v not supported", operation)
-		}
-	}
-
-	cwg.Wait()
 }
 
 func parse(lastActions []string, json gjson.Result) (components []component) {
