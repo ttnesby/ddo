@@ -1,25 +1,36 @@
 package arg
 
 import (
-	"ddo/alogger"
+	"flag"
+	"fmt"
 	"os"
 	"strings"
 )
 
-var l = alogger.New()
-
 const (
-	argProgramName = iota
-	argActionsPath
-	argMinNo = argActionsPath + 1
+	argProgramName     = 0
+	flagArgActionsPath = 0
+	flagArgMinNo       = flagArgActionsPath + 1
 )
 
-func AreOk() bool {
-	l.Infof("Start program: %v", os.Args[argProgramName])
+var (
+	debug    bool
+	noResult bool
+)
 
-	if len(os.Args) < argMinNo {
-		l.Errorf("missing parameter(s)")
-		l.Infof(`\n
+func Init() {
+	flag.BoolVar(&debug, "debug", false, "debug mode")
+	flag.BoolVar(&noResult, "noResult", false, "No display of action result")
+	flag.Parse()
+}
+
+func AreOk() bool {
+
+	fmt.Printf("Start program: %v\n", os.Args[argProgramName])
+
+	if len(os.Args) < flagArgMinNo {
+		fmt.Printf("missing parameter(s)")
+		fmt.Printf(`\n
 usage: ddo <operation> <actions path...>
 
 <operation> - one of: ce, va, if, de
@@ -34,7 +45,7 @@ e.g.
 - "ddo ce navutv rg" for config export of navutv and component rg 
 - "ddo ce navutv" for config export of all components in navutv
 - "ddo if" for what-if of all components in all tenants
-`)
+\n`)
 		return false
 	}
 
@@ -42,17 +53,25 @@ e.g.
 }
 
 func Operation() string {
-	return os.Args[argActionsPath]
+	return flag.Args()[flagArgActionsPath]
 }
 
 func ActionsPath() (actionPath string) {
-	return strings.Join(os.Args[argActionsPath:], ".")
+	return strings.Join(flag.Args()[flagArgActionsPath:], ".")
 }
 
 func LastActions() []string {
-	if len(os.Args) == argMinNo {
+	if len(flag.Args()) == flagArgMinNo {
 		return []string{}
 	} else {
-		return os.Args[argMinNo:]
+		return flag.Args()[flagArgMinNo:]
 	}
+}
+
+func InDebugMode() bool {
+	return debug
+}
+
+func NoResultDisplay() bool {
+	return noResult
 }

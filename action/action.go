@@ -10,6 +10,7 @@ import (
 	"ddo/path"
 	"fmt"
 	"github.com/tidwall/gjson"
+	"os"
 	"strings"
 	"sync"
 )
@@ -21,7 +22,11 @@ const (
 	opDE = "de"
 )
 
-var l = alogger.New()
+var l alogger.ALogger
+
+func Init() {
+	l = alogger.New(arg.InDebugMode())
+}
 
 type conctx struct {
 	container *dagger.Container
@@ -36,10 +41,14 @@ type component struct {
 
 func Do(ctx context.Context) (e error) {
 
+	var client *dagger.Client
+
 	l.Infof("Start dagger client")
-	//TODO the following should be enabled when debug mode
-	//client, e := dagger.Connect(ctx, dagger.WithLogOutput(os.Stdout))
-	client, e := dagger.Connect(ctx)
+	if arg.InDebugMode() {
+		client, e = dagger.Connect(ctx, dagger.WithLogOutput(os.Stdout))
+	} else {
+		client, e = dagger.Connect(ctx)
+	}
 	if e != nil {
 		return l.Error(e)
 	}
@@ -134,10 +143,14 @@ func configExport(component component, signalError chan<- bool, c conctx, wg *sy
 
 	yaml, err := c.exec(configuration.New(component.folder, component.tags).AsYaml())
 	if err != nil {
-		l.Errorf("%v failed \n%v", component.path, err)
 		signalError <- true
-	} else {
+		l.Errorf("%v failed \n%v", component.path, err)
+		return
+	}
+	if !arg.NoResultDisplay() {
 		l.Infof("%v \n%v", component.path, yaml)
+	} else {
+		l.Infof("%v done", component.path)
 	}
 }
 
@@ -169,9 +182,13 @@ func configAzCmd(
 	if err != nil {
 		signalError <- true
 		l.Errorf("%v failed\n%v", component.path, err)
-	} else {
-		//l.Infof("%v done", component.path)
+		return
+	}
+
+	if !arg.NoResultDisplay() {
 		l.Infof("%v \n%v", component.path, yaml)
+	} else {
+		l.Infof("%v done", component.path)
 	}
 }
 

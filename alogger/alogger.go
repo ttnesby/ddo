@@ -14,10 +14,12 @@ type ALogger struct {
 	zerolog.Logger
 }
 
-func New() ALogger {
-	//TODO need to add flag to enable debug mode
-	//zerolog.SetGlobalLevel(zerolog.DebugLevel)
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+func New(debug bool) ALogger {
+	if debug {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	} else {
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	}
 	return ALogger{
 		log.Output(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339}).
 			With().

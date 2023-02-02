@@ -2,6 +2,7 @@ package path
 
 import (
 	"ddo/alogger"
+	"ddo/arg"
 	"fmt"
 	"github.com/oklog/ulid/v2"
 	"os"
@@ -10,7 +11,11 @@ import (
 	"strings"
 )
 
-var l = alogger.New()
+var l alogger.ALogger
+
+func Init() {
+	l = alogger.New(arg.InDebugMode())
+}
 
 // Home returns the absolute path of the home directory.
 func Home() string {

@@ -3,6 +3,7 @@ package deployment
 import (
 	"bytes"
 	"ddo/alogger"
+	"ddo/arg"
 	de "ddo/deployment/destination"
 	fp "ddo/path"
 	"fmt"
@@ -12,7 +13,11 @@ import (
 	"strings"
 )
 
-var l = alogger.New()
+var l alogger.ALogger
+
+func Init() {
+	l = alogger.New(arg.InDebugMode())
+}
 
 type operation string
 

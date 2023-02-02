@@ -3,13 +3,18 @@ package configuration
 import (
 	"bytes"
 	"ddo/alogger"
+	"ddo/arg"
 	"ddo/path"
 	"fmt"
 	"io"
 	"os/exec"
 )
 
-var l = alogger.New()
+var l alogger.ALogger
+
+func Init() {
+	l = alogger.New(arg.InDebugMode())
+}
 
 type CueCli []string
 

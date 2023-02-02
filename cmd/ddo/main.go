@@ -4,8 +4,19 @@ import (
 	"context"
 	"ddo/action"
 	"ddo/arg"
+	"ddo/configuration"
+	"ddo/deployment"
+	"ddo/path"
 	"os"
 )
+
+func init() {
+	arg.Init()
+	action.Init()
+	configuration.Init()
+	deployment.Init()
+	path.Init()
+}
 
 func main() {
 
