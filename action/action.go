@@ -93,57 +93,6 @@ func configExport(component component, c conctx, wg *sync.WaitGroup) {
 	}
 }
 
-//func showTimer(component string, stopTimer <-chan bool, wg *sync.WaitGroup) {
-//
-//	defer wg.Done()
-//
-//	ticker := time.Tick(time.Second)
-//	start := time.Now()
-//
-//	stopSignal := false
-//
-//	go func() {
-//		<-stopTimer
-//		stopSignal = true
-//	}()
-//
-//	fmt.Println()
-//	for {
-//		<-ticker
-//		fmt.Printf("\r[%s]: %s", component, time.Now().Sub(start))
-//		if stopSignal {
-//			break
-//		}
-//	}
-//	fmt.Println()
-//}
-
-//func configValidate(component component, c conctx, wg *sync.WaitGroup) {
-//	defer wg.Done()
-//
-//	templatePath, toJsonCmd, tmpFile, destination, err := componentDetails(component, c)
-//	if err != nil {
-//		return
-//	}
-//
-//	c.container = c.container.WithExec(toJsonCmd) // need the updated container with tmp file for az cli cmd
-//
-//	azCmd, err := dep.Validate(templatePath, tmpFile, destination)
-//	if err != nil {
-//		l.Errorf("could not create az cli validation command %v", err)
-//		return
-//	}
-//
-//	yaml, err := c.exec(azCmd)
-//	if err != nil {
-//		l.Errorf("%v failed\n%v", component.path, err)
-//	} else {
-//		l.Infof("%v done", component.path)
-//		_ = yaml
-//		//l.Infof("Component %v \n%v", component.path, yaml)
-//	}
-//}
-
 func configAzCmd(
 	component component,
 	getAzCmd func(string, string, dep.ADestination) (dep.AzCli, error),
@@ -173,54 +122,6 @@ func configAzCmd(
 		l.Infof("%v \n%v", component.path, yaml)
 	}
 }
-
-//func configWhatIf(component component, c conctx, wg *sync.WaitGroup) {
-//	defer wg.Done()
-//
-//	templatePath, toJsonCmd, tmpFile, destination, err := componentDetails(component, c)
-//	if err != nil {
-//		return
-//	}
-//
-//	c.container = c.container.WithExec(toJsonCmd) // need the updated container with tmp file for az cli cmd
-//
-//	azCmd, err := dep.WhatIf(templatePath, tmpFile, destination)
-//	if err != nil {
-//		l.Errorf("could not create az cli validation command %v", err)
-//		return
-//	}
-//
-//	yaml, err := c.exec(azCmd)
-//	if err != nil {
-//		l.Errorf("Component %v with failing validation \n%v", component.path, err)
-//	} else {
-//		l.Infof("Component %v \n%v", component.path, yaml)
-//	}
-//}
-
-//func configDeploy(component component, c conctx, wg *sync.WaitGroup) {
-//	defer wg.Done()
-//
-//	templatePath, toJsonCmd, tmpFile, destination, err := componentDetails(component, c)
-//	if err != nil {
-//		return
-//	}
-//
-//	c.container = c.container.WithExec(toJsonCmd) // need the updated container with tmp file for az cli cmd
-//
-//	azCmd, err := dep.Deploy(templatePath, tmpFile, destination)
-//	if err != nil {
-//		l.Errorf("could not create az cli validation command %v", err)
-//		return
-//	}
-//
-//	yaml, err := c.exec(azCmd)
-//	if err != nil {
-//		l.Errorf("Component %v with failing validation \n%v", component.path, err)
-//	} else {
-//		l.Infof("%v \n%v", component.path, yaml)
-//	}
-//}
 
 func componentDetails(component component, c conctx) (
 	templatePath string,
@@ -279,10 +180,6 @@ func doComponents(operation string, components []component, c conctx) {
 
 	var cwg sync.WaitGroup
 
-	//var twg sync.WaitGroup
-	//stopTimer := make(chan bool)
-	//twg.Add(1)
-	//go showTimer("Processing components", stopTimer, &twg)
 	validate := func(template, parameters string, dst dep.ADestination) (dep.AzCli, error) {
 		return dep.Validate(template, parameters, dst)
 	}
@@ -316,9 +213,6 @@ func doComponents(operation string, components []component, c conctx) {
 	}
 
 	cwg.Wait()
-	//stopTimer <- true
-	//twg.Wait()
-	//close(stopTimer)
 }
 
 func parse(lastActions []string, json gjson.Result) (components []component) {
