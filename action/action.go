@@ -68,7 +68,7 @@ func Do(ctx context.Context) (e error) {
 	}
 
 	actionSpec := path.ActionSpecification()
-	l.Infof("Find ddo.cue %v", actionSpec)
+	l.Infof("Searched ddo.cue %v", actionSpec)
 	if len(actionSpec) == 0 || len(actionSpec) > 1 {
 		return l.Error(fmt.Errorf("%d ddo.cue found", len(actionSpec)))
 	}
@@ -78,7 +78,7 @@ func Do(ctx context.Context) (e error) {
 		return e
 	}
 
-	l.Infof("Get actions: %s", arg.ActionsPath())
+	l.Infof("Get selected actions: %v", arg.ActionsPath())
 	actions := gjson.Get(actionJson, "actions."+arg.ActionsPath()+"|@pretty")
 	if !actions.Exists() {
 		return l.Error(fmt.Errorf("no such path: %v", arg.ActionsPath()))

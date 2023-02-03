@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"ddo/action"
+	"ddo/action/component"
 	"ddo/arg"
 	"ddo/configuration"
 	"ddo/deployment"
@@ -13,6 +14,7 @@ import (
 func init() {
 	arg.Init()
 	action.Init()
+	component.Init()
 	configuration.Init()
 	deployment.Init()
 	path.Init()
