@@ -19,6 +19,7 @@ ce - config export
 va - validate config against azure
 if - what-if analysis against azure
 de - deploy to azure
+evomer - remove iff the component has '#resourceId' definition
 
 e.g. 
 ddo ce navutv rg - config export of navutv and component rg 
@@ -54,7 +55,11 @@ func AreOk() bool {
 		fmt.Printf("missing parameter(s)\n\n")
 		flag.Usage()
 		return false
-	case flag.Arg(0) != "ce" && flag.Arg(0) != "va" && flag.Arg(0) != "if" && flag.Arg(0) != "de":
+	case flag.Arg(0) != "ce" &&
+		flag.Arg(0) != "va" &&
+		flag.Arg(0) != "if" &&
+		flag.Arg(0) != "de" &&
+		flag.Arg(0) != "evomer":
 		fmt.Printf("invalid parameter(s)\n\n")
 		flag.Usage()
 		return false

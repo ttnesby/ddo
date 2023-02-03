@@ -2,7 +2,7 @@ package deployment_test
 
 import (
 	"ddo/alogger"
-	dep "ddo/deployment"
+	dep "ddo/azcli/deployment"
 	"ddo/path"
 	"ddo/util"
 	"fmt"

@@ -5,8 +5,9 @@ import (
 	"ddo/action"
 	"ddo/action/component"
 	"ddo/arg"
+	delete2 "ddo/azcli/delete"
+	"ddo/azcli/deployment"
 	"ddo/configuration"
-	"ddo/deployment"
 	"ddo/path"
 	"os"
 )
@@ -18,6 +19,7 @@ func init() {
 	configuration.Init()
 	deployment.Init()
 	path.Init()
+	delete2.Init()
 }
 
 func main() {

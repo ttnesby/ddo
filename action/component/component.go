@@ -5,8 +5,9 @@ import (
 	"dagger.io/dagger"
 	"ddo/alogger"
 	"ddo/arg"
+	del "ddo/azcli/delete"
+	dep "ddo/azcli/deployment"
 	"ddo/configuration"
-	dep "ddo/deployment"
 	p "ddo/path"
 	"fmt"
 	"github.com/tidwall/gjson"
@@ -43,6 +44,17 @@ func (c Component) templatePath() (path string, e error) {
 		return "", l.Error(fmt.Errorf("%v failed\n%v", c.path, e))
 	default:
 		l.Debugf("%v templatePath %v", c.path, path)
+		return path, nil
+	}
+}
+
+func (c Component) resourceId() (path string, e error) {
+	path, e = c.tech.exec(c.config().ElementsAsText([]string{"#resourceId"}))
+	switch {
+	case e != nil:
+		return "", l.Error(fmt.Errorf("%v failed\n%v", c.path, e))
+	default:
+		l.Debugf("%v #resourceId %v", c.path, path)
 		return path, nil
 	}
 }
@@ -99,6 +111,20 @@ func (c Component) exec(cmd []string, signalError chan<- bool) {
 	}
 }
 
+func (c Component) remove(signalError chan<- bool) {
+
+	l.Debugf("%v remove", c.path)
+
+	resourceId, err := c.resourceId()
+	if err != nil {
+		signalError <- true
+		return
+	}
+
+	azCmd := del.ResourceId(resourceId)
+	c.exec(azCmd, signalError)
+}
+
 func (c Component) configExport(signalError chan<- bool) {
 	l.Debugf("%v configDeploy", c.path)
 	c.exec(c.config().AsYaml(), signalError)
@@ -137,7 +163,7 @@ func (c Component) configDeploy(
 func (c Component) Do(signalError chan<- bool, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	l.Debugf("%v do", c.path)
+	l.Infof("%v %s", c.path, arg.Operation())
 
 	validate := func(template, parameters string, dst dep.ADestination) (dep.AzCli, error) {
 		return dep.Validate(template, parameters, dst)
@@ -160,6 +186,8 @@ func (c Component) Do(signalError chan<- bool, wg *sync.WaitGroup) {
 		c.configDeploy(whatif, signalError)
 	case "de":
 		c.configDeploy(deploy, signalError)
+	case "evomer":
+		c.remove(signalError)
 	default:
 		signalError <- true
 	}

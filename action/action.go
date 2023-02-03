@@ -13,6 +13,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 )
 
 var l alogger.ALogger
@@ -142,6 +143,9 @@ func doComponents(groups [][]component.Component) error {
 		}
 
 		cwg.Wait()
+		// in case of evomer and non #resourceId - not catching then signal, due to the if-break?
+		// with a little more wait, the error signal is picked up.It's ok with va, if - slower stuff
+		time.Sleep(25 * time.Millisecond)
 		stopListening = true
 		close(signalError)
 	}

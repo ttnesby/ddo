@@ -12,6 +12,9 @@ _tenant: g.#aTenantKey @tag(tenant)
 #location: g.#location.norwayeast
 #tags:     g.#tagsTemplate
 
+// if you want to "!REMOVE!" it with ddo, define the resource id
+#resourceId: "/subscriptions/\(g.#subscriptionId[_tenant])/resourceGroups/\(#name)"
+
 templatePath: "./test/infrastructure/resourceGroup/main.bicep"
 
 parameters: #jsonParameterFile & {

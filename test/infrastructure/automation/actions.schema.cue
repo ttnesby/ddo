@@ -15,7 +15,7 @@ actions: #actions
 
 //########## schema ##########
 
-#operations: ["ce","va","if","de"]
+#operations: ["ce","va","if","de","evomer"]
 #anOperation: or(#operations)
 
 #nonEmptyString: s={

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"ddo/alogger"
 	"ddo/arg"
-	de "ddo/deployment/destination"
+	de "ddo/azcli/deployment/destination"
 	fp "ddo/path"
 	"fmt"
 	"github.com/google/uuid"

@@ -1,7 +1,7 @@
 package destination_test
 
 import (
-	"ddo/deployment/destination"
+	"ddo/azcli/deployment/destination"
 	"github.com/google/go-cmp/cmp"
 	"testing"
 )
