@@ -38,8 +38,6 @@ as above, but with `if` instead of `va`
 
 as above, but with `de` instead of `va`
 
-**Observes the following:** Order dependency is not handled yet, so if you deploy `cr` before `rg` it will fail
-
 ## Clear cache once a while:
 
 build cache: `go clean -cache`
