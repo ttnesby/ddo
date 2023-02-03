@@ -8,48 +8,57 @@ import (
 )
 
 const (
-	argProgramName     = 0
 	flagArgActionsPath = 0
 	flagArgMinNo       = flagArgActionsPath + 1
-)
 
-var (
-	debug    bool
-	noResult bool
-)
+	usage = `usage: %s
+ddo [options] [action path...]
 
-func Init() {
-	flag.BoolVar(&debug, "debug", false, "debug mode")
-	flag.BoolVar(&noResult, "noResult", false, "No display of action result")
-	flag.Parse()
-}
-
-func AreOk() bool {
-
-	fmt.Printf("Start program: %v\n", os.Args[argProgramName])
-
-	if len(os.Args) < flagArgMinNo {
-		fmt.Printf("missing parameter(s)")
-		fmt.Printf(`\n
-usage: ddo <operation> <actions path...>
-
-<operation> - one of: ce, va, if, de
+Action path is a path to component in ddo.cue file, starting with one of:
 ce - config export
 va - validate config against azure
 if - what-if analysis against azure
 de - deploy to azure
 
-<actions path...> - path to component in ddo.cue file, 
-
 e.g. 
-- "ddo ce navutv rg" for config export of navutv and component rg 
-- "ddo ce navutv" for config export of all components in navutv
-- "ddo if" for what-if of all components in all tenants
-\n`)
-		return false
+ddo ce navutv rg - config export of navutv and component rg 
+ddo ce navutv - config export of all components in navutv
+ddo if - what-if of all components in all tenants
+
+Options:
+`
+)
+
+var config struct {
+	debug    bool
+	noResult bool
+}
+
+func Init() {
+	flag.BoolVar(&config.debug, "debug", false, "debug mode")
+	flag.BoolVar(&config.noResult, "no-result", false, "No display of action result")
+
+	flag.Usage = func() {
+		_, _ = fmt.Fprintf(flag.CommandLine.Output(), usage, os.Args[0])
+		flag.PrintDefaults()
 	}
 
-	return true
+	flag.Parse()
+}
+
+func AreOk() bool {
+	switch {
+	case len(flag.Args()) == 0:
+		fmt.Printf("missing parameter(s)\n\n")
+		flag.Usage()
+		return false
+	case flag.Arg(0) != "ce" && flag.Arg(0) != "va" && flag.Arg(0) != "if" && flag.Arg(0) != "de":
+		fmt.Printf("invalid parameter(s)\n\n")
+		flag.Usage()
+		return false
+	default:
+		return true
+	}
 }
 
 func Operation() string {
@@ -69,9 +78,9 @@ func LastActions() []string {
 }
 
 func InDebugMode() bool {
-	return debug
+	return config.debug
 }
 
 func NoResultDisplay() bool {
-	return noResult
+	return config.noResult
 }
