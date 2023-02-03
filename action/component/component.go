@@ -19,7 +19,7 @@ type conctx struct {
 	ctx       context.Context
 }
 
-type component struct {
+type Component struct {
 	path   []string
 	folder string
 	tags   []string
@@ -32,11 +32,11 @@ func Init() {
 	l = alogger.New(arg.InDebugMode())
 }
 
-func (c component) config() configuration.CueCli {
+func (c Component) config() configuration.CueCli {
 	return configuration.New(c.folder, c.tags).WithPackage("deployment")
 }
 
-func (c component) templatePath() (path string, e error) {
+func (c Component) templatePath() (path string, e error) {
 	path, e = c.tech.exec(c.config().ElementsAsText([]string{"templatePath"}))
 	switch {
 	case e != nil:
@@ -47,7 +47,7 @@ func (c component) templatePath() (path string, e error) {
 	}
 }
 
-func (c component) target() (dst dep.ADestination, e error) {
+func (c Component) target() (dst dep.ADestination, e error) {
 	targetJson, e := c.tech.exec(c.config().ElementsAsJson([]string{"target"}))
 	switch {
 	case e != nil:
@@ -75,7 +75,7 @@ func (c component) target() (dst dep.ADestination, e error) {
 	return dst, nil
 }
 
-func (c component) paramsToTmpJsonFile() (path string, cmd configuration.CueCli) {
+func (c Component) paramsToTmpJsonFile() (path string, cmd configuration.CueCli) {
 	path = p.ContainerTmpJson()
 	cmd = c.config().ElementsToTmpJsonFile(path, []string{"parameters"})
 	return path, cmd
@@ -86,7 +86,7 @@ func (c conctx) exec(cmd []string) (stdout string, e error) {
 	return strings.TrimRight(r, "\r\n"), err
 }
 
-func (c component) exec(cmd []string, signalError chan<- bool) {
+func (c Component) exec(cmd []string, signalError chan<- bool) {
 	res, err := c.tech.exec(cmd)
 	switch {
 	case err != nil:
@@ -99,13 +99,16 @@ func (c component) exec(cmd []string, signalError chan<- bool) {
 	}
 }
 
-func (c component) configExport(signalError chan<- bool) {
+func (c Component) configExport(signalError chan<- bool) {
+	l.Debugf("%v configDeploy", c.path)
 	c.exec(c.config().AsYaml(), signalError)
 }
 
-func (c component) configDeploy(
+func (c Component) configDeploy(
 	depOp func(string, string, dep.ADestination) (dep.AzCli, error),
 	signalError chan<- bool) {
+
+	l.Debugf("%v configDeploy", c.path)
 
 	tmpJsonFile, exportCmd := c.paramsToTmpJsonFile()
 	c.tech.container = c.tech.container.WithExec(exportCmd) // config params exported to tmp json file
@@ -131,8 +134,10 @@ func (c component) configDeploy(
 	c.exec(azCmd, signalError)
 }
 
-func (c component) do(signalError chan<- bool, wg *sync.WaitGroup) {
+func (c Component) Do(signalError chan<- bool, wg *sync.WaitGroup) {
 	defer wg.Done()
+
+	l.Debugf("%v do", c.path)
 
 	validate := func(template, parameters string, dst dep.ADestination) (dep.AzCli, error) {
 		return dep.Validate(template, parameters, dst)
@@ -158,4 +163,90 @@ func (c component) do(signalError chan<- bool, wg *sync.WaitGroup) {
 	default:
 		signalError <- true
 	}
+}
+
+func ActionsToComponents(
+	selection, deployOrder gjson.Result,
+	container *dagger.Container,
+	ctx context.Context) (components [][]Component) {
+
+	components = orderComponents(
+		parse(
+			selection,
+			conctx{container: container, ctx: ctx},
+		),
+		deployOrder,
+	)
+
+	return components
+}
+
+func parse(json gjson.Result, cc conctx) (components []Component) {
+
+	tmp := make([]Component, 0)
+	lastActions := arg.LastActions()
+
+	var loop func(lastActions []string, json gjson.Result)
+	loop = func(lastActions []string, json gjson.Result) {
+		if json.IsObject() {
+			if objectIsComponent(json.Value().(map[string]interface{})) {
+				tmp = append(
+					tmp,
+					createComponent(
+						lastActions,
+						json.Get("folder").String(),
+						getTags(json.Get("tags").Array()),
+						cc,
+					))
+			} else {
+				json.ForEach(func(key, value gjson.Result) bool {
+					l.Debugf("key: %v", key)
+					loop(append(lastActions, key.String()), value)
+					return true
+				})
+			}
+		}
+	}
+
+	loop(lastActions, json)
+
+	return tmp
+}
+
+func orderComponents(components []Component, deployOrder gjson.Result) (ordCo [][]Component) {
+
+	l.Debugf("group components %v", components)
+	// make a list where each element is a list of components that can be deployed in parallel
+	for _, le := range deployOrder.Array() {
+		var group []Component
+		for _, co := range le.Array() {
+			for _, c := range components {
+				noOfPathElems := len(c.path)
+				if c.path[noOfPathElems-1] == co.String() {
+					group = append(group, c)
+				}
+			}
+		}
+		ordCo = append(ordCo, group)
+	}
+
+	l.Debugf("Ordered components %v", ordCo)
+	return ordCo
+}
+
+func objectIsComponent(v map[string]interface{}) bool {
+	_, hasFolder := v["folder"]
+	_, hasTags := v["tags"]
+	return hasFolder && hasTags
+}
+
+func createComponent(path []string, folder string, tags []string, cc conctx) Component {
+	return Component{path: path, folder: folder, tags: tags, tech: cc}
+}
+
+func getTags(r []gjson.Result) (tags []string) {
+	for _, v := range r {
+		tags = append(tags, v.String())
+	}
+	return tags
 }
