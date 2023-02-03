@@ -41,8 +41,11 @@ func New(path string, tags []string) (cmd CueCli) {
 	return cmd
 }
 
-//TODO should add support for WithPackage --package <name>
-// the ddo solution is based on two packages; actions and deployment with corresponding schemas
+func (cueCmd CueCli) WithPackage(p string) (cmd CueCli) {
+	cmd = append(cueCmd, "--package", p)
+	l.Debugf("cueCmd: %v", cmd)
+	return cmd
+}
 
 func (cueCmd CueCli) AsJson() (cmd CueCli) {
 	cmd = append(cueCmd, "--out", "json")

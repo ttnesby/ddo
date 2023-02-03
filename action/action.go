@@ -141,7 +141,7 @@ func orderComponents(components []component, json string) (ordCo [][]component, 
 func configExport(component component, signalError chan<- bool, c conctx, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	yaml, err := c.exec(configuration.New(component.folder, component.tags).AsYaml())
+	yaml, err := c.exec(configuration.New(component.folder, component.tags).WithPackage("deployment").AsYaml())
 	if err != nil {
 		signalError <- true
 		l.Errorf("%v failed \n%v", component.path, err)
@@ -269,7 +269,7 @@ func componentDetails(component component, c conctx) (
 		return "", configuration.CueCli{}, "", nil, l.Error(err)
 	}
 
-	config := configuration.New(component.folder, component.tags)
+	config := configuration.New(component.folder, component.tags).WithPackage("deployment")
 
 	// template path
 	templatePath, err := c.exec(config.ElementsAsText([]string{"templatePath"}))
@@ -361,7 +361,7 @@ func objectIsComponent(v map[string]interface{}) bool {
 func getSpecification(specificationPath string, c conctx) (actionJson string, e error) {
 
 	l.Infof("Reading action specification %v", specificationPath)
-	actionJson, e = c.exec(configuration.New(specificationPath, nil).AsJson())
+	actionJson, e = c.exec(configuration.New(specificationPath, nil).WithPackage("actions").AsJson())
 	if e != nil {
 		return "", l.Error(e)
 	}
