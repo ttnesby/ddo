@@ -44,7 +44,7 @@ func Do(ctx context.Context) (e error) {
 	var client *dagger.Client
 
 	l.Infof("Start dagger client")
-	if arg.InDebugMode() {
+	if arg.DebugContainer() {
 		client, e = dagger.Connect(ctx, dagger.WithLogOutput(os.Stdout))
 	} else {
 		client, e = dagger.Connect(ctx)

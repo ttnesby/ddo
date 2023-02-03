@@ -30,12 +30,14 @@ Options:
 )
 
 var config struct {
-	debug    bool
-	noResult bool
+	debug          bool
+	debugContainer bool
+	noResult       bool
 }
 
 func Init() {
 	flag.BoolVar(&config.debug, "debug", false, "debug mode")
+	flag.BoolVar(&config.debugContainer, "debug-container", false, "debug mode for dagger.io")
 	flag.BoolVar(&config.noResult, "no-result", false, "No display of action result")
 
 	flag.Usage = func() {
@@ -79,6 +81,10 @@ func LastActions() []string {
 
 func InDebugMode() bool {
 	return config.debug
+}
+
+func DebugContainer() bool {
+	return config.debugContainer
 }
 
 func NoResultDisplay() bool {
