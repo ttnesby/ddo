@@ -94,6 +94,7 @@ func (c Component) paramsToTmpJsonFile() (path string, cmd configuration.CueCli)
 	return path, cmd
 }
 
+// TODO need to deal with remove and lack of feedback
 func (c conctx) exec(cmd []string) (stdout string, e error) {
 	r, err := c.container.WithExec(cmd).Stdout(c.ctx)
 	return strings.TrimRight(r, "\r\n"), err

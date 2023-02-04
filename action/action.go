@@ -148,6 +148,12 @@ func doComponents(groups [][]component.Component) error {
 		time.Sleep(25 * time.Millisecond)
 		stopListening = true
 		close(signalError)
+
+		if op := arg.Operation(); (op == arg.OpDE || op == arg.OpRE) && noOfErrors > 0 {
+			// due to order dependency for these operations - stop now
+			l.Infof("Error in prerequisites operation(s) - stopping")
+			break
+		}
 	}
 
 	if noOfErrors > 0 {
