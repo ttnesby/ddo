@@ -8,6 +8,12 @@ import (
 )
 
 const (
+	OpCE = "ce"
+	OpVA = "va"
+	OpIF = "if"
+	OpDE = "de"
+	OpRE = "evomer"
+
 	flagArgActionsPath = 0
 	flagArgMinNo       = flagArgActionsPath + 1
 
@@ -55,11 +61,11 @@ func AreOk() bool {
 		fmt.Printf("missing parameter(s)\n\n")
 		flag.Usage()
 		return false
-	case flag.Arg(0) != "ce" &&
-		flag.Arg(0) != "va" &&
-		flag.Arg(0) != "if" &&
-		flag.Arg(0) != "de" &&
-		flag.Arg(0) != "evomer":
+	case flag.Arg(0) != OpCE &&
+		flag.Arg(0) != OpVA &&
+		flag.Arg(0) != OpIF &&
+		flag.Arg(0) != OpDE &&
+		flag.Arg(0) != OpRE:
 		fmt.Printf("invalid parameter(s)\n\n")
 		flag.Usage()
 		return false

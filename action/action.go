@@ -139,7 +139,7 @@ func doComponents(groups [][]component.Component) error {
 
 		for _, co := range group {
 			cwg.Add(1)
-			co.Do(signalError, &cwg)
+			go co.Do(signalError, &cwg)
 		}
 
 		cwg.Wait()

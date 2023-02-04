@@ -38,3 +38,14 @@ func SkipIfNotLoggedIntoNAVUTV(t *testing.T) {
 		t.Skip("not logged into tenant NAVUTV")
 	}
 }
+
+// ReverseSlice https://eli.thegreenplace.net/2021/generic-functions-on-slices-with-go-type-parameters/
+func ReverseSlice[T any](s []T) {
+	first := 0
+	last := len(s) - 1
+	for first < last {
+		s[first], s[last] = s[last], s[first]
+		first++
+		last--
+	}
+}

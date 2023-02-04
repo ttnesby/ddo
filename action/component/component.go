@@ -9,6 +9,7 @@ import (
 	dep "ddo/azcli/deployment"
 	"ddo/configuration"
 	p "ddo/path"
+	"ddo/util"
 	"fmt"
 	"github.com/tidwall/gjson"
 	"strings"
@@ -178,15 +179,15 @@ func (c Component) Do(signalError chan<- bool, wg *sync.WaitGroup) {
 	}
 
 	switch arg.Operation() {
-	case "ce":
+	case arg.OpCE:
 		c.configExport(signalError)
-	case "va":
+	case arg.OpVA:
 		c.configDeploy(validate, signalError)
-	case "if":
+	case arg.OpIF:
 		c.configDeploy(whatif, signalError)
-	case "de":
+	case arg.OpDE:
 		c.configDeploy(deploy, signalError)
-	case "evomer":
+	case arg.OpRE:
 		c.remove(signalError)
 	default:
 		signalError <- true
@@ -245,6 +246,13 @@ func orderComponents(components []Component, deployOrder gjson.Result) (ordCo []
 
 	l.Debugf("group components %v", components)
 	// make a list where each element is a list of components that can be deployed in parallel
+
+	// order is not relevant for ce, va or if
+	if op := arg.Operation(); op == arg.OpCE || op == arg.OpVA || op == arg.OpIF {
+		l.Debugf("due operation %s, no order required", op)
+		return append(ordCo, components)
+	}
+
 	for _, le := range deployOrder.Array() {
 		var group []Component
 		for _, co := range le.Array() {
@@ -256,6 +264,13 @@ func orderComponents(components []Component, deployOrder gjson.Result) (ordCo []
 			}
 		}
 		ordCo = append(ordCo, group)
+	}
+
+	// order must be reversed
+	if op := arg.Operation(); op == arg.OpRE {
+		l.Debugf("due operation %s, order is reversed", op)
+		util.ReverseSlice(ordCo)
+		return ordCo
 	}
 
 	l.Debugf("Ordered components %v", ordCo)

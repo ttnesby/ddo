@@ -37,6 +37,12 @@ _tenant: g.#aTenantKey @tag(tenant)
 	zoneRedundancy:      *"enabled" | #enabling // requires sku Premium
 }
 
+// if you want to "evomer" it with ddo, define the resource id
+#s: "/subscriptions/\(g.#subscriptionId[_tenant])"
+#g: "/resourceGroups/\(rg.#name)"
+#pro: "/providers/Microsoft.ContainerRegistry/registries"
+#resourceId: "\(#s)\(#g)\(#pro)/\(#name)"
+
 templatePath: "./test/infrastructure/containerRegistry/main.bicep"
 
 parameters: #jsonParameterFile & {
