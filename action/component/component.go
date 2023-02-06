@@ -94,7 +94,7 @@ func (c Component) paramsToTmpJsonFile() (path string, cmd configuration.CueCli)
 	return path, cmd
 }
 
-// TODO need to deal with remove and lack of feedback
+// -- need to deal with remove and lack of feedback - no, fooled by cache...
 func (c conctx) exec(cmd []string) (stdout string, e error) {
 	r, err := c.container.WithExec(cmd).Stdout(c.ctx)
 	return strings.TrimRight(r, "\r\n"), err
@@ -116,6 +116,9 @@ func (c Component) exec(cmd []string, signalError chan<- bool) {
 func (c Component) remove(signalError chan<- bool) {
 
 	l.Debugf("%v remove", c.path)
+
+	//TODO - in case of type resourceGroups/ - do we need --force? In case of hosted resource cannot be deleted
+	// and use of --force on the resource group will remediate the situation
 
 	resourceId, err := c.resourceId()
 	if err != nil {
