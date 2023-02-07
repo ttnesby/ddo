@@ -48,7 +48,7 @@ func build(ctx context.Context) error {
 	for _, goos := range oses {
 		for _, goarch := range arches {
 			// create a directory for each os and arch
-			path := fmt.Sprintf("pipeBuild/%s/%s/", goos, goarch)
+			path := fmt.Sprintf("build/%s/%s/", goos, goarch)
 
 			// set GOARCH and GOOS in the pipeBuild environment
 			build := golang.WithEnvVariable("GOOS", goos)
