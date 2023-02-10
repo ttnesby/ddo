@@ -6,7 +6,7 @@ import (
 	"ddo/action/component"
 	"ddo/alogger"
 	"ddo/arg"
-	"ddo/configuration"
+	"ddo/cuecli"
 	"ddo/path"
 	"fmt"
 	"github.com/tidwall/gjson"
@@ -26,11 +26,11 @@ func Do(ctx context.Context) (e error) {
 
 	var client *dagger.Client
 
-	l.Infof("Start dagger client")
+	l.Infof("start dagger client")
 	if arg.DebugContainer() {
-		client, e = dagger.Connect(ctx, dagger.WithLogOutput(os.Stdout))
+		client, e = dagger.Connect(ctx, dagger.WithLogOutput(os.Stdout), dagger.WithWorkdir("."))
 	} else {
-		client, e = dagger.Connect(ctx)
+		client, e = dagger.Connect(ctx, dagger.WithWorkdir("."))
 	}
 	if e != nil {
 		return l.Error(e)
@@ -61,7 +61,7 @@ func Do(ctx context.Context) (e error) {
 		return e
 	}
 
-	l.Infof("Done!")
+	l.Infof("done!")
 
 	return nil
 }
@@ -71,18 +71,21 @@ func getSelectionAndDeployOrder(
 	ctx context.Context) (selection, deployOrder gjson.Result, e error) {
 
 	actionSpec := path.ActionSpecification()
-	l.Infof("Searched ddo.cue %v", actionSpec)
+	l.Infof("searched for ddo.cue %v", actionSpec)
 	if len(actionSpec) == 0 || len(actionSpec) > 1 {
 		return selection, deployOrder, l.Error(fmt.Errorf("%d ddo.cue file(s) found", len(actionSpec)))
 	}
 
-	l.Infof("Reading action specification %v", actionSpec[0])
+	l.Infof("reading action specification %v", actionSpec[0])
 	actionJson, e := container.WithExec(
-		configuration.New(
+		cuecli.New(
 			actionSpec[0],
 			nil,
-		).WithPackage("actions").AsJson(),
-	).Stdout(ctx)
+		).
+			WithPackage("actions").
+			AsJson(),
+	).WithWorkdir(".").
+		Stdout(ctx)
 
 	actionJson = strings.TrimRight(actionJson, "\r\n")
 
@@ -90,7 +93,7 @@ func getSelectionAndDeployOrder(
 		return selection, deployOrder, l.Error(e)
 	}
 
-	l.Infof("Get selection: %v", arg.ActionsPath())
+	l.Infof("get selection: %v", arg.ActionsPath())
 	selection = gjson.Get(actionJson, "actions."+arg.ActionsPath()+"|@pretty")
 	if !selection.Exists() {
 		return selection, deployOrder, l.Error(fmt.Errorf("no such path: %v", arg.ActionsPath()))
@@ -100,7 +103,7 @@ func getSelectionAndDeployOrder(
 		return selection, deployOrder, l.Error(fmt.Errorf("resulting json-selection from path is invalid"))
 	}
 
-	l.Infof("Get deployOrder")
+	l.Infof("get deployOrder")
 	deployOrder = gjson.Get(actionJson, "deployOrder"+"|@pretty")
 	if !deployOrder.Exists() {
 		return selection, deployOrder, l.Error(fmt.Errorf("no deployOrder in ddo.cue"))
@@ -164,37 +167,23 @@ func doComponents(groups [][]component.Component) error {
 
 func getContainer(client *dagger.Client) (*dagger.Container, error) {
 
-	const (
-		containerRef      = "docker.io/ttnesby/azbicue:latest"
-		containerDotAzure = "/root/.azure"
-		containerRepoRoot = "/rr"
-	)
-
-	l.Debugf("Verify and connect to host repository %s", path.RepoRoot())
-	l.Debugf("Verify and connect to host %s", getDotAzurePath())
-	if !path.AbsExists(getDotAzurePath()) {
-		return nil, l.Error(fmt.Errorf("folder %s does not exist", getDotAzurePath()))
-	}
-
-	l.Debugf("Start container %s mounting [repo root, .azure]", containerRef)
+	l.Debugf("connect to host repository [%s]", path.HostRepoRoot())
+	l.Debugf("connect to host [%s]", path.HostDotAzure())
+	l.Debugf("start container [%s] mounting [repo root, .azure]", path.ContainerRef)
 
 	return client.Container().
-		From(containerRef).
-		WithMountedDirectory(containerRepoRoot, hostRepoRoot(client)).
-		WithMountedDirectory(containerDotAzure, hostDotAzure(client)).
-		WithWorkdir(containerRepoRoot), nil
-}
-
-func getDotAzurePath() string {
-	return path.HomeAbs(".azure")
+		From(path.ContainerRef).
+		WithMountedDirectory(path.ContainerRepoRoot, hostRepoRoot(client)).
+		WithMountedDirectory(path.ContainerDotAzure, hostDotAzure(client)).
+		WithWorkdir(path.ContainerRepoRoot), nil
 }
 
 func hostRepoRoot(c *dagger.Client) *dagger.Directory {
-	return c.Host().Directory(path.RepoRoot())
+	return c.Host().Directory(path.HostRepoRoot(), dagger.HostDirectoryOpts{Exclude: []string{"build/"}})
 }
 
 func hostDotAzure(c *dagger.Client) *dagger.Directory {
-	return c.Host().Directory(getDotAzurePath(),
+	return c.Host().Directory(path.HostDotAzure(),
 		dagger.HostDirectoryOpts{
 			Include: []string{
 				"azureProfile.json",

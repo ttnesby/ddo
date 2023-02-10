@@ -26,7 +26,7 @@ _tenant: g.#aTenantKey @tag(tenant)
 		azureADAuthenticationAsArmPolicy: *"enabled" | #enabling
 		exportPolicy:                     *"enabled" | #enabling
 		quarantinePolicy:                 *"disabled" | #enabling
-		retentionPolicy: {// delete older images not used
+		retentionPolicy: {// resource older images not used
 			days:   *5 | int
 			status: *"enabled" | #enabling
 		}

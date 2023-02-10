@@ -1,5 +1,17 @@
 # ddo
 
+## Prototyping
+
+### ddo as container
+
+`docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd):/rr -v ~/.azure:/root/.azure ttnesby/ddo:latest ce navutv cr`
+
+### ddo as binary
+
+`./build/darwin/arm64/ddo -no-result ce`
+
+
+
 ## Test runs
 
 > Pre-requisites: 

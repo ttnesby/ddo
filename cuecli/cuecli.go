@@ -1,10 +1,9 @@
-package configuration
+package cuecli
 
 import (
 	"bytes"
 	"ddo/alogger"
 	"ddo/arg"
-	"ddo/path"
 	"fmt"
 	"io"
 	"os/exec"
@@ -86,7 +85,7 @@ func (cueCmd CueCli) Run() (byte []byte, e error) {
 	l.Debugf("cueCmd: %v", cueCmd)
 
 	cmd := exec.Command(cueCmd[0], cueCmd[1:]...)
-	cmd.Dir = path.RepoRoot()
+	cmd.Dir = "./" //path.RepoRoot()
 
 	var stdoutBuf, stderrBuf bytes.Buffer
 	cmd.Stdout = io.MultiWriter(&stdoutBuf) //os.Stdout

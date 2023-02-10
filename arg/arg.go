@@ -58,7 +58,7 @@ func Init() {
 func AreOk() bool {
 	switch {
 	case len(flag.Args()) == 0:
-		fmt.Printf("missing parameter(s)\n\n")
+		fmt.Printf("missing action path\n\n")
 		flag.Usage()
 		return false
 	case flag.Arg(0) != OpCE &&
@@ -66,7 +66,7 @@ func AreOk() bool {
 		flag.Arg(0) != OpIF &&
 		flag.Arg(0) != OpDE &&
 		flag.Arg(0) != OpRE:
-		fmt.Printf("invalid parameter(s)\n\n")
+		fmt.Printf("invalid action path\n\n")
 		flag.Usage()
 		return false
 	default:

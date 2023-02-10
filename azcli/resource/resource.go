@@ -1,4 +1,4 @@
-package delete
+package resource
 
 import (
 	"ddo/alogger"
@@ -18,7 +18,7 @@ func ResourceId(rId string) (azCmd AzCli) {
 	azCmd = []string{
 		"az",
 		"resource",
-		"delete",
+		"resource",
 		"--ids",
 		rId,
 		"--verbose",

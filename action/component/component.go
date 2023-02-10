@@ -5,9 +5,9 @@ import (
 	"dagger.io/dagger"
 	"ddo/alogger"
 	"ddo/arg"
-	del "ddo/azcli/delete"
 	dep "ddo/azcli/deployment"
-	"ddo/configuration"
+	del "ddo/azcli/resource"
+	"ddo/cuecli"
 	p "ddo/path"
 	"ddo/util"
 	"fmt"
@@ -34,8 +34,8 @@ func Init() {
 	l = alogger.New(arg.InDebugMode())
 }
 
-func (c Component) config() configuration.CueCli {
-	return configuration.New(c.folder, c.tags).WithPackage("deployment")
+func (c Component) config() cuecli.CueCli {
+	return cuecli.New(c.folder, c.tags).WithPackage("deployment")
 }
 
 func (c Component) templatePath() (path string, e error) {
@@ -88,7 +88,7 @@ func (c Component) target() (dst dep.ADestination, e error) {
 	return dst, nil
 }
 
-func (c Component) paramsToTmpJsonFile() (path string, cmd configuration.CueCli) {
+func (c Component) paramsToTmpJsonFile() (path string, cmd cuecli.CueCli) {
 	path = p.ContainerTmpJson()
 	cmd = c.config().ElementsToTmpJsonFile(path, []string{"parameters"})
 	return path, cmd
@@ -248,12 +248,12 @@ func parse(json gjson.Result, cc conctx) (components []Component) {
 
 func orderComponents(components []Component, deployOrder gjson.Result) (ordCo [][]Component) {
 
-	l.Debugf("group components %v", components)
+	l.Debugf("maybe group components %v", components)
 	// make a list where each element is a list of components that can be deployed in parallel
 
 	// order is not relevant for ce, va or if
 	if op := arg.Operation(); op == arg.OpCE || op == arg.OpVA || op == arg.OpIF {
-		l.Debugf("due operation %s, no order required", op)
+		l.Infof("due to operation %s, no order required", op)
 		return append(ordCo, components)
 	}
 
@@ -272,12 +272,12 @@ func orderComponents(components []Component, deployOrder gjson.Result) (ordCo []
 
 	// order must be reversed
 	if op := arg.Operation(); op == arg.OpRE {
-		l.Debugf("due operation %s, order is reversed", op)
+		l.Infof("due to operation %s, order is reversed", op)
 		util.ReverseSlice(ordCo)
 		return ordCo
 	}
 
-	l.Debugf("Ordered components %v", ordCo)
+	l.Infof("ordered components %v", ordCo)
 	return ordCo
 }
 

@@ -5,7 +5,6 @@ import (
 	"ddo/alogger"
 	"ddo/arg"
 	de "ddo/azcli/deployment/destination"
-	fp "ddo/path"
 	"fmt"
 	"github.com/google/uuid"
 	"io"
@@ -41,9 +40,6 @@ type ADestination func() (de.Destination, error)
 
 func azDeploy(op operation, templatePath, parameterPath string, destination ADestination) (AzCli, error) {
 
-	tfp := fp.RepoAbs(templatePath)
-	pfp := fp.RepoAbs(parameterPath)
-
 	theDest, err := destination()
 	if err != nil {
 		return nil, err
@@ -52,7 +48,7 @@ func azDeploy(op operation, templatePath, parameterPath string, destination ADes
 
 	azCmd := []string{"az", "deployment", dest}
 	azCmd = append(azCmd, strings.Split(string(op), " ")...) // due to whatIf
-	azCmd = append(azCmd, "--name", name(tfp+pfp))
+	azCmd = append(azCmd, "--name", name(templatePath+parameterPath))
 	azCmd = append(azCmd, destParams...)
 	azCmd = append(azCmd, "--template-file", templatePath, "--parameters", "@"+parameterPath, "--out", "yaml")
 

@@ -3,12 +3,20 @@ package path
 import (
 	"ddo/alogger"
 	"ddo/arg"
+	"ddo/util"
 	"fmt"
 	"github.com/oklog/ulid/v2"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
+)
+
+const (
+	DotAzure          = ".azure"
+	ContainerRef      = "docker.io/ttnesby/azbicue:latest"
+	ContainerDotAzure = "/root/" + DotAzure
+	ContainerUser     = "/root"
+	ContainerRepoRoot = "/rr"
 )
 
 var l alogger.ALogger
@@ -17,61 +25,50 @@ func Init() {
 	l = alogger.New(arg.InDebugMode())
 }
 
-// Home returns the absolute path of the home directory.
-func Home() string {
-
+func home() string {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		panic(fmt.Errorf("retrieving home path returned error: %v", err))
 	}
-	return strings.TrimRight(string(home), "\n")
+	return home
 }
 
-// HomeAbs returns the absolute path of the given path relative to the home directory.
-func HomeAbs(relativePath string) string {
-
-	return filepath.Join(Home(), relativePath)
-}
-
-// RepoRoot returns the absolute path of the repo root.
-func RepoRoot() string {
-
-	cmd := []string{"git", "rev-parse", "--show-toplevel"}
-
-	rr, err := exec.Command(cmd[0], cmd[1:]...).Output()
-	if err != nil {
-		panic(fmt.Errorf("retrieving repo root path [%v] returned error: %v", cmd, err))
+func HostDotAzure() string {
+	if util.InDockerContainer() {
+		return filepath.Join(ContainerUser, DotAzure)
 	}
-	return strings.TrimRight(string(rr), "\n")
+	return filepath.Join(home(), DotAzure)
 }
 
-// RepoAbs returns the absolute path of the given path relative to the repo root.
-func RepoAbs(relativePath string) string {
-
-	return filepath.Join(RepoRoot(), relativePath)
+func HostRepoRoot() string {
+	if util.InDockerContainer() {
+		return ContainerRepoRoot
+	}
+	return "."
 }
 
-// AbsExists returns true if the given absolute path exists.
-func AbsExists(absolutePath string) bool {
-	_, err := os.Stat(absolutePath)
-	return err == nil
+func ContainerTmpJson() (tmpJson string) {
+	tmpJson = filepath.Join("/tmp", fmt.Sprintf("ddo.parameters.%s.json", ulid.Make().String()))
+	l.Debugf("Creating temporary json-file %s", tmpJson)
+	return tmpJson
 }
 
-func ContainerTmpJson() string {
-	return filepath.Join("/tmp", fmt.Sprintf("ddo.parameters.%s.json", ulid.Make().String()))
+func clean(p, f string) string {
+	relPath := func() string {
+		if filepath.IsAbs(p) {
+			rp, _ := filepath.Rel(ContainerRepoRoot, strings.TrimSuffix(p, string(os.PathSeparator)+f))
+			return rp
+		}
+		return strings.TrimSuffix(p, string(os.PathSeparator)+f)
+	}()
+	return "." + string(os.PathSeparator) + relPath
 }
 
 func ActionSpecification() (path []string) {
 
 	var foundPaths []string
 
-	absToRelative := func(absPath, fileName string) (relativePath string) {
-		//TODO fix err handling
-		relativePath, _ = filepath.Rel(RepoRoot(), strings.TrimSuffix(absPath, fileName))
-		return "./" + filepath.Clean(relativePath)
-	}
-
-	err := filepath.Walk(RepoRoot(), func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(HostRepoRoot(), func(path string, info os.FileInfo, err error) error {
 
 		if err != nil {
 			l.Errorf("filepath.Walk() error: %v", err)
@@ -79,7 +76,7 @@ func ActionSpecification() (path []string) {
 		}
 
 		if !info.IsDir() && info.Name() == "ddo.cue" {
-			foundPaths = append(foundPaths, absToRelative(path, info.Name()))
+			foundPaths = append(foundPaths, clean(path, info.Name()))
 		}
 
 		return nil
