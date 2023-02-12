@@ -18,4 +18,5 @@
 
 .DS_Store
 
-build/
+# Build files
+./build/
