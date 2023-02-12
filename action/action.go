@@ -276,7 +276,7 @@ func getContainer(client *dagger.Client) (*dagger.Container, error) {
 }
 
 func hostRepoRoot(c *dagger.Client) *dagger.Directory {
-	return c.Host().Directory(path.HostRepoRoot(), dagger.HostDirectoryOpts{Exclude: []string{"build/"}})
+	return c.Host().Directory(path.HostRepoRoot(), dagger.HostDirectoryOpts{Exclude: []string{"output/"}})
 }
 
 func hostDotAzure(c *dagger.Client) *dagger.Directory {

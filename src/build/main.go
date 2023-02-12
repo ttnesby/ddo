@@ -48,7 +48,7 @@ func build(ctx context.Context) error {
 			"/rr",
 			client.Host().Directory(
 				".",
-				dagger.HostDirectoryOpts{Exclude: []string{"build/"}},
+				dagger.HostDirectoryOpts{Exclude: []string{"output/"}},
 			),
 		).
 		WithWorkdir("/rr/cmd/ddo")
@@ -56,7 +56,7 @@ func build(ctx context.Context) error {
 	for _, goos := range oses {
 		for _, goarch := range arches {
 			// create a directory for each os and arch
-			path := fmt.Sprintf("build/%s/%s/", goos, goarch)
+			path := fmt.Sprintf("output/%s/%s/", goos, goarch)
 
 			// set GOARCH and GOOS in the pipeBuild environment
 			cnt = cnt.WithEnvVariable("GOOS", goos).

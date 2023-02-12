@@ -48,7 +48,7 @@ func build(ctx context.Context) error {
 	}(client)
 
 	hostRepoRoot := client.Host().
-		Directory(".", dagger.HostDirectoryOpts{Exclude: []string{"build/"}})
+		Directory(".", dagger.HostDirectoryOpts{Exclude: []string{"output/"}})
 
 	const (
 		name       = "/ddo"
