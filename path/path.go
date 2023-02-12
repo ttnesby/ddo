@@ -53,7 +53,7 @@ func ContainerTmpJson() (tmpJson string) {
 	return tmpJson
 }
 
-func clean(p, f string) string {
+func toRelative(p, f string) string {
 	relPath := func() string {
 		if filepath.IsAbs(p) {
 			rp, _ := filepath.Rel(ContainerRepoRoot, strings.TrimSuffix(p, string(os.PathSeparator)+f))
@@ -76,7 +76,7 @@ func ActionSpecification() (path []string) {
 		}
 
 		if !info.IsDir() && info.Name() == "ddo.cue" {
-			foundPaths = append(foundPaths, clean(path, info.Name()))
+			foundPaths = append(foundPaths, toRelative(path, info.Name()))
 		}
 
 		return nil

@@ -6,7 +6,10 @@ import (
 
 // cue export ./test/infrastructure/resourceGroup -t tenant=navutv
 
-_tenant: g.#aTenantKey @tag(tenant)
+_tenant:          g.#aTenantKey @tag(tenant)
+crid:             *"" | string  @tag(crid)
+crpoltruststatus: *"" | string  @tag(crpoltruststatus)
+crb64:            *"" | string  @tag(crb64)
 
 #name:     "container-registry"
 #location: g.#location.norwayeast
@@ -18,14 +21,14 @@ _tenant: g.#aTenantKey @tag(tenant)
 templatePath: "./test/infrastructure/resourceGroup/main.bicep"
 
 parameters: #jsonParameterFile & {
-		#s: {
-				name:     #name
-				location: #location
-				tags:     #tags
-		}
+	#s: {
+		name:     #name
+		location: #location
+		tags:     #tags
+	}
 }
 
-target: subscription : {
-		id:       g.#subscriptionId[_tenant]
-		location: g.#location.norwayeast
+target: subscription: {
+	id:       g.#subscriptionId[_tenant]
+	location: g.#location.norwayeast
 }

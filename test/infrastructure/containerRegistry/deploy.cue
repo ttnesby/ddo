@@ -38,26 +38,25 @@ _tenant: g.#aTenantKey @tag(tenant)
 }
 
 // if you want to "evomer" it with ddo, define the resource id
-#s: "/subscriptions/\(g.#subscriptionId[_tenant])"
-#g: "/resourceGroups/\(rg.#name)"
-#pro: "/providers/Microsoft.ContainerRegistry/registries"
+#s:          "/subscriptions/\(g.#subscriptionId[_tenant])"
+#g:          "/resourceGroups/\(rg.#name)"
+#pro:        "/providers/Microsoft.ContainerRegistry/registries"
 #resourceId: "\(#s)\(#g)\(#pro)/\(#name)"
 
 templatePath: "./test/infrastructure/containerRegistry/main.bicep"
 
 parameters: #jsonParameterFile & {
-		#s:  {
-			name:     #name
-			location: #location
-			tags:     #tags
-			skuName:  #skuName
-			// no identity
-			properties: #propertiesTemplate
-		}
+	#s: {
+		name:     #name
+		location: #location
+		tags:     #tags
+		skuName:  #skuName
+		// no identity
+		properties: #propertiesTemplate
+	}
 }
 
 target: resourceGroup: {
-		name:             rg.#name
-		inSubscriptionId: g.#subscriptionId[_tenant]
+	name:             rg.#name
+	inSubscriptionId: g.#subscriptionId[_tenant]
 }
-

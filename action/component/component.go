@@ -6,7 +6,7 @@ import (
 	"ddo/alogger"
 	"ddo/arg"
 	dep "ddo/azcli/deployment"
-	del "ddo/azcli/resource"
+	"ddo/azcli/resource"
 	"ddo/cuecli"
 	p "ddo/path"
 	"ddo/util"
@@ -49,7 +49,7 @@ func (c Component) templatePath() (path string, e error) {
 	}
 }
 
-func (c Component) resourceId() (path string, e error) {
+func (c Component) ResourceId() (path string, e error) {
 	path, e = c.tech.exec(c.config().ElementsAsText([]string{"#resourceId"}))
 	switch {
 	case e != nil:
@@ -120,13 +120,13 @@ func (c Component) remove(signalError chan<- bool) {
 	//TODO - in case of type resourceGroups/ - do we need --force? In case of hosted resource cannot be deleted
 	// and use of --force on the resource group will remediate the situation
 
-	resourceId, err := c.resourceId()
+	resourceId, err := c.ResourceId()
 	if err != nil {
 		signalError <- true
 		return
 	}
 
-	azCmd := del.ResourceId(resourceId)
+	azCmd := resource.Delete(resourceId)
 	c.exec(azCmd, signalError)
 }
 
@@ -196,6 +196,45 @@ func (c Component) Do(signalError chan<- bool, wg *sync.WaitGroup) {
 	default:
 		signalError <- true
 	}
+}
+
+func isDataInjection(tag string) (name, actionPath, dataPath string, isInjection bool) {
+
+	elems := strings.Split(tag, "<<")
+	//e.g. [trust= navutv.cr policies.trustPolicy.status]
+	if len(elems) != 3 {
+		return name, actionPath, dataPath, false
+	}
+	l.Debugf("injection %v", elems)
+	name = strings.TrimSuffix(elems[0], "=")
+	actionPath = elems[1]
+	dataPath = elems[2]
+	return name, actionPath, dataPath, true
+}
+
+// DataInjection
+// iterates all tags for the component and if a tag require a data injection, the resolve function is invoked
+func (c Component) DataInjection(resolve func(string, string) (string, error)) (e error) {
+
+	anError := false
+	l.Infof("injection for %v", c.folder)
+	for index, t := range c.tags {
+		name, actionPath, dataPath, isInjection := isDataInjection(t)
+		if isInjection {
+			l.Debugf("resolving %s %s", actionPath, dataPath)
+			data, e := resolve(actionPath, dataPath)
+			if e == nil {
+				c.tags[index] = fmt.Sprintf("%s=%s", name, data)
+			} else {
+				anError = true
+			}
+		}
+	}
+
+	if anError {
+		return l.Error(fmt.Errorf("at least one error in tags data injection"))
+	}
+	return nil
 }
 
 func ActionsToComponents(

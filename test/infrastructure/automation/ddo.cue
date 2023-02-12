@@ -10,9 +10,14 @@ _componentsPath: "./test/infrastructure"
 
 #components: {
 	#tenant: g.#aTenantKey
-	rg: #component & {
+	rg:      #component & {
 		folder: "\(_componentsPath)/resourceGroup"
-		tags: ["tenant=\(#tenant)"]
+		tags: [
+			"tenant=\(#tenant)",
+			"crid=<<\(#tenant).cr<<id",
+			"crpoltruststatus=<<\(#tenant).cr<<properties.policies.trustPolicy.status",
+			"crb64=<<\(#tenant).cr<<b64",
+		]
 		// TODO: add support for data dependencies
 		// support of data dependencies iff another resource exists in azure
 		// due to cyclic dependencies and order of creation, need deploy time injection using tags
@@ -27,9 +32,9 @@ _componentsPath: "./test/infrastructure"
 		// tags:[..., crb=cr.b64"]
 		// [] or {} - either data or {},[]
 	}
-	cr: #component &{
+	cr: #component & {
 		folder: "\(_componentsPath)/containerRegistry"
-		tags:["tenant=\(#tenant)"]
+		tags: ["tenant=\(#tenant)"]
 	}
 }
 

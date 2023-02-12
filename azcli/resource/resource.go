@@ -13,15 +13,29 @@ func Init() {
 
 type AzCli []string
 
-func ResourceId(rId string) (azCmd AzCli) {
+func Delete(rId string) (azCmd AzCli) {
 
 	azCmd = []string{
 		"az",
 		"resource",
-		"resource",
+		"delete",
 		"--ids",
 		rId,
 		"--verbose",
+	}
+
+	l.Debugf("azCmd: %v", azCmd)
+	return azCmd
+}
+
+func Show(rId string) (azCmd AzCli) {
+
+	azCmd = []string{
+		"az",
+		"resource",
+		"show",
+		"--ids",
+		rId,
 	}
 
 	l.Debugf("azCmd: %v", azCmd)

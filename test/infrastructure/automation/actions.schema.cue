@@ -15,13 +15,13 @@ actions: #actions
 
 //########## schema ##########
 
-#operations: ["ce","va","if","de","evomer"]
+#operations: ["ce", "va", "if", "de", "evomer"]
 #anOperation: or(#operations)
 
 #nonEmptyString: s={
 	string
-	_len: len(s)
-	#valid: > 0 & _len
+	_len:   len(s)
+	#valid: >0 & _len
 }
 
 #component: {
@@ -31,14 +31,14 @@ actions: #actions
 
 #folderPath: s={
 	string
-	#valid: strings.HasPrefix(s, _componentsPath + "/") & true
+	#valid: strings.HasPrefix(s, _componentsPath+"/") & true
 }
 
 #components: close({[string]: #component})
-#componentNames: [for k,_ in #components {k}]
+#componentNames: [ for k, _ in #components {k}]
 #aComponentName: or(#componentNames)
 
-#listOfComponents: [#aComponentName,...#aComponentName]
+#listOfComponents: [#aComponentName, ...#aComponentName]
 
 #actions: {
 	#componentActions: {...}

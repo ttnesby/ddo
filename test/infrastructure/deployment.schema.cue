@@ -6,7 +6,7 @@ import (
 
 //########## 3 mandatory fields ##########
 
-	// bicep/arm file path, relative to repo root
+// bicep/arm file path, relative to repo root
 templatePath: #nonEmptyString
 // template parameters
 parameters: #jsonParameterFile
@@ -17,14 +17,14 @@ target: #resourceGroup | #subscription | #managementGroup
 
 #nonEmptyString: s={
 	string
-	_len: len(s)
-	#valid: > 0 & _len
+	_len:   len(s)
+	#valid: >0 & _len
 }
 
 // ResourceGroup target
 #resourceGroup: resourceGroup: {
-		name: #nonEmptyString
-		inSubscriptionId: #guid
+	name:             #nonEmptyString
+	inSubscriptionId: #guid
 }
 
 // Subscription target
@@ -35,8 +35,8 @@ target: #resourceGroup | #subscription | #managementGroup
 
 // common properties for subscription and management group targets
 #base: {
-		id: #guid
-		location: #nonEmptyString
+	id:       #guid
+	location: #nonEmptyString
 }
 
 // string as guid type
