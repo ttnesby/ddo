@@ -17,16 +17,28 @@ var platforms = []dagger.Platform{
 // the container registry for the multi-platform image
 const imageRepo = "docker.io/ttnesby/ddo:latest"
 
+func main() {
+
+	exitCode := func() int {
+		if err := build(context.Background()); err != nil {
+			fmt.Println(err)
+			return 1
+		}
+		return 0
+	}()
+	os.Exit(exitCode)
+}
+
 // util that returns the architecture of the provided platform
 func architectureOf(platform dagger.Platform) string {
 	return platformFormat.MustParse(string(platform)).Architecture
 }
 
-func main() {
-	ctx := context.Background()
+func build(ctx context.Context) error {
+
 	client, err := dagger.Connect(ctx, dagger.WithLogOutput(os.Stdout), dagger.WithWorkdir("."))
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer func(client *dagger.Client) {
 		err := client.Close()
@@ -88,7 +100,8 @@ func main() {
 			PlatformVariants: platformVariants,
 		})
 	if err != nil {
-		panic(err)
+		return err
 	}
 	fmt.Println("published multi-platform image with digest", imageDigest)
+	return nil
 }

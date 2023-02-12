@@ -8,9 +8,15 @@ import (
 )
 
 func main() {
-	if err := build(context.Background()); err != nil {
-		fmt.Println(err)
-	}
+
+	exitCode := func() int {
+		if err := build(context.Background()); err != nil {
+			fmt.Println(err)
+			return 1
+		}
+		return 0
+	}()
+	os.Exit(exitCode)
 }
 
 func build(ctx context.Context) error {
