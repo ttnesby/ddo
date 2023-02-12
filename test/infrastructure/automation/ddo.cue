@@ -14,23 +14,12 @@ _componentsPath: "./test/infrastructure"
 		folder: "\(_componentsPath)/resourceGroup"
 		tags: [
 			"tenant=\(#tenant)",
+			// azure data lookup, << pathComponent << pathData (`azure resource show` as reference)
 			"crid=<<\(#tenant).cr<<id",
 			"crpoltruststatus=<<\(#tenant).cr<<properties.policies.trustPolicy.status",
+			// azure data lookup, << pathComponent << b64
 			"crb64=<<\(#tenant).cr<<b64",
 		]
-		// TODO: add support for data dependencies
-		// support of data dependencies iff another resource exists in azure
-		// due to cyclic dependencies and order of creation, need deploy time injection using tags
-		// e.g. this component depends cr component, which depends on this component...
-
-		// two scenarios:
-		// 1. require a specific field from cr (az resource show --ids <cr id>) + gjson lookup
-		// tags:[..., "crid=cr.id","crpoltruststatus=cr.policies.trustPolicy.status"]
-		// string only - either data or ""
-
-		// 2. require complex data (list, struct) from cr, base64 encode
-		// tags:[..., crb=cr.b64"]
-		// [] or {} - either data or {},[]
 	}
 	cr: #component & {
 		folder: "\(_componentsPath)/containerRegistry"

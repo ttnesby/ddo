@@ -292,7 +292,7 @@ func orderComponents(components []Component, deployOrder gjson.Result) (ordCo []
 
 	// order is not relevant for ce, va or if
 	if op := arg.Operation(); op == arg.OpCE || op == arg.OpVA || op == arg.OpIF {
-		l.Infof("due to operation %s, no order required", op)
+		l.Debugf("due to operation %s, no order required", op)
 		return append(ordCo, components)
 	}
 
@@ -311,12 +311,12 @@ func orderComponents(components []Component, deployOrder gjson.Result) (ordCo []
 
 	// order must be reversed
 	if op := arg.Operation(); op == arg.OpRE {
-		l.Infof("due to operation %s, order is reversed", op)
+		l.Debugf("due to operation %s, order is reversed", op)
 		util.ReverseSlice(ordCo)
 		return ordCo
 	}
 
-	l.Infof("ordered components %v", ordCo)
+	l.Debugf("ordered components %v", ordCo)
 	return ordCo
 }
 
