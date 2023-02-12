@@ -40,12 +40,15 @@ var config struct {
 	debug          bool
 	debugContainer bool
 	noResult       bool
+	containerRef   string
 }
 
 func Init() {
 	flag.BoolVar(&config.debug, "debug", false, "debug mode")
 	flag.BoolVar(&config.debugContainer, "debug-container", false, "debug mode for dagger.io")
 	flag.BoolVar(&config.noResult, "no-result", false, "No display of action result")
+	flag.StringVar(&config.containerRef, "cnt", "docker.io/ttnesby/azbicue:latest",
+		"container ref. hosting az cli, bicep and cue. Default is 'docker.io/ttnesby/azbicue:latest'")
 
 	flag.Usage = func() {
 		_, _ = fmt.Fprintf(flag.CommandLine.Output(), usage, os.Args[0])
@@ -100,4 +103,8 @@ func DebugContainer() bool {
 
 func NoResultDisplay() bool {
 	return config.noResult
+}
+
+func ContainerRef() string {
+	return config.containerRef
 }

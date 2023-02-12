@@ -13,7 +13,6 @@ import (
 
 const (
 	DotAzure          = ".azure"
-	ContainerRef      = "docker.io/ttnesby/azbicue:latest"
 	ContainerDotAzure = "/root/" + DotAzure
 	ContainerUser     = "/root"
 	ContainerRepoRoot = "/rr"

@@ -266,10 +266,10 @@ func getContainer(client *dagger.Client) (*dagger.Container, error) {
 
 	l.Debugf("connect to host repository [%s]", path.HostRepoRoot())
 	l.Debugf("connect to host [%s]", path.HostDotAzure())
-	l.Debugf("start container [%s] mounting [repo root, .azure]", path.ContainerRef)
+	l.Debugf("start container [%s] mounting [repo root, .azure]", arg.ContainerRef())
 
 	return client.Container().
-		From(path.ContainerRef).
+		From(arg.ContainerRef()).
 		WithMountedDirectory(path.ContainerRepoRoot, hostRepoRoot(client)).
 		WithMountedDirectory(path.ContainerDotAzure, hostDotAzure(client)).
 		WithWorkdir(path.ContainerRepoRoot), nil
