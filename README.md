@@ -260,17 +260,17 @@ In this example, the extra tags are just enhancing the resource group tags.
 
 The value for those tags are defined the un orchestration configuration (`ddo.cue`):
 ```cue
-	rg: #component & {
-		 folder: "\(_componentsPath)/resourceGroup"
-		 tags: [
-			"tenant=\(#tenant)",
-			// azure data lookup, << pathComponent << pathData (`azure resource show` as reference)
-			"crid=<<\(#tenant).cr<<id",
-			"crpoltruststatus=<<\(#tenant).cr<<properties.policies.trustPolicy.status",
-			// azure data lookup, << pathComponent << b64
-			"crb64=<<\(#tenant).cr<<b64",
-		]
-	}
+rg: #component & {
+     folder: "\(_componentsPath)/resourceGroup"
+     tags: [
+        "tenant=\(#tenant)",
+        // azure data lookup, << pathComponent << pathData (`azure resource show` as reference)
+        "crid=<<\(#tenant).cr<<id",
+        "crpoltruststatus=<<\(#tenant).cr<<properties.policies.trustPolicy.status",
+        // azure data lookup, << pathComponent << b64
+        "crb64=<<\(#tenant).cr<<b64",
+    ]
+}
 ```
 
 The syntax is simple; `tagname=<<componentPath<<dataPath|b64`. 
