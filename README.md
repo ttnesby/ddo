@@ -461,3 +461,6 @@ Now is it possible to run `va navutv` and `if navutv`.
 
 ### build and push tools docker image (az cli, bicep, cue cli)
 - `./src/tools/main.go` - using dagger.io
+
+### cue.mod
+- `./cue.mod/module.cue` - is the cue version of go.mod. Used by the cue config. in test folder.
