@@ -283,21 +283,149 @@ The `b64` is a special case since tags are simple values only, no objects or lis
 
 > The data set reference for a component is `azure resource show --ids <#resourceId of the component>`
 
+## Usage - az cli is installed
+
+Having `az cli` installed is the easiest way to use `ddo`. It supports inheritance of the hosts `.azure` folder
+
+> - Pre-requisites: a terminal window and in a repo root folder supporting relevant configuration, e.g. this project
+> - Pre-requisites: in a terminal window, do az login for relevant tenants 
+> - `docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd):/rr -v ~/.azure:/root/.azure docker.io/ttnesby/ddo:latest`
+
+The docker run command has three mounts:
+1. `/var/run/docker.sock:/var/run/docker.sock` - to be able to run docker commands from within the container (kind of docker-in-docker where dagger.io will be a `sibling` of this container)
+2. `$(pwd):/rr` - to be able to access the current folder from within the container
+3. `~/.azure:/root/.azure` - to be able to access the hosts `.azure` folder from within the container
+
+From now on, `docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd):/rr -v ~/.azure:/root/.azure docker.io/ttnesby/ddo:latest` 
+is abbreviated to `./output/darwin/arm64/ddo` (the binary version).
+
+### Help
+```zsh
+./output/darwin/arm64/ddo -h
+#output
+usage: ./output/darwin/arm64/ddo
+ddo [options] [action path...]
+
+Action path is a path to component in ddo.cue file, starting with one of:
+ce - config export
+va - validate config against azure
+if - what-if analysis against azure
+de - deploy to azure
+evomer - remove iff the component has '#resourceId' definition
+
+e.g.
+ddo ce navutv rg - config export of navutv and component rg
+ddo ce navutv - config export of all components in navutv
+ddo if - what-if of all components in all tenants
+
+Options:
+  -cnt string
+    	container ref. hosting az cli, bicep and cue. Default is 'docker.io/ttnesby/azbicue:latest' (default "docker.io/ttnesby/azbicue:latest")
+  -debug
+    	debug mode
+  -debug-container
+    	debug mode for dagger.io
+  -no-result
+    	No display of action result
+```
+`-no-result` is a good thing to use when running in a CI/CD pipeline. The exit code will be 0 if the actions were 
+successful, otherwise 1.
+
+### -no-result ce navutv 
+```zsh
+./output/darwin/arm64/ddo -no-result ce navutv
+#output
+2023-02-13T14:00:12+01:00 INF action.go:43 > start dagger client
+2023-02-13T14:00:14+01:00 INF action.go:155 > searched for ddo.cue [./test/infrastructure/automation]
+2023-02-13T14:00:14+01:00 INF action.go:160 > reading action specification ./test/infrastructure/automation
+2023-02-13T14:00:15+01:00 INF action.go:190 > get selection: actions.ce.navutv|@pretty
+2023-02-13T14:00:15+01:00 INF action.go:190 > get selection: deployOrder|@pretty
+2023-02-13T14:00:15+01:00 INF action.go:141 > resolve data injections for components
+2023-02-13T14:00:15+01:00 INF component.go:220 > injection for ./test/infrastructure/resourceGroup
+2023-02-13T14:00:15+01:00 INF action.go:190 > get selection: actions.ce.navutv.cr|@pretty
+2023-02-13T14:00:23+01:00 INF action.go:190 > get selection: actions.ce.navutv.cr|@pretty
+2023-02-13T14:00:23+01:00 INF action.go:190 > get selection: actions.ce.navutv.cr|@pretty
+2023-02-13T14:00:24+01:00 INF component.go:220 > injection for ./test/infrastructure/containerRegistry
+2023-02-13T14:00:24+01:00 INF component.go:171 > [navutv cr] ce
+2023-02-13T14:00:24+01:00 INF component.go:171 > [navutv rg] ce
+2023-02-13T14:00:25+01:00 INF component.go:110 > [navutv rg] done
+2023-02-13T14:00:25+01:00 INF component.go:110 > [navutv cr] done
+2023-02-13T14:00:25+01:00 INF action.go:94 > done!
+```
+### -no-result va navutv
+```zsh
+./output/darwin/arm64/ddo -no-result va navutv
+#output
+2023-02-13T14:04:26+01:00 INF action.go:43 > start dagger client
+2023-02-13T14:04:28+01:00 INF action.go:155 > searched for ddo.cue [./test/infrastructure/automation]
+2023-02-13T14:04:28+01:00 INF action.go:160 > reading action specification ./test/infrastructure/automation
+2023-02-13T14:04:30+01:00 INF action.go:190 > get selection: actions.va.navutv|@pretty
+2023-02-13T14:04:30+01:00 INF action.go:190 > get selection: deployOrder|@pretty
+2023-02-13T14:04:30+01:00 INF action.go:141 > resolve data injections for components
+2023-02-13T14:04:30+01:00 INF component.go:220 > injection for ./test/infrastructure/resourceGroup
+2023-02-13T14:04:30+01:00 INF action.go:190 > get selection: actions.ce.navutv.cr|@pretty
+2023-02-13T14:04:37+01:00 INF action.go:190 > get selection: actions.ce.navutv.cr|@pretty
+2023-02-13T14:04:38+01:00 INF action.go:190 > get selection: actions.ce.navutv.cr|@pretty
+2023-02-13T14:04:38+01:00 INF component.go:220 > injection for ./test/infrastructure/containerRegistry
+2023-02-13T14:04:38+01:00 INF component.go:171 > [navutv cr] va
+2023-02-13T14:04:38+01:00 INF component.go:171 > [navutv rg] va
+2023-02-13T14:05:06+01:00 INF component.go:110 > [navutv rg] done
+2023-02-13T14:05:06+01:00 ERR component.go:108 > error="[navutv cr] failed \ninput:1: container.from.withMountedDirectory.withMountedDirectory.withWorkdir.withExec.withExec.stdout process \"az deployment group validate --name 46e12143-6c37-587d-96c8-15472baf8e89 --subscription ca1e4592-6211-4c03-aac5-e681c1d1ea0d --resource-group container-registry --template-file ./test/infrastructure/containerRegistry/main.bicep --parameters @/tmp/ddo.parameters.01GS5E16GG1JV1BZZN9K362MP8.json --out yaml\" did not complete successfully: exit code: 1\nStdout:\n\nStderr:\nERROR: {\"code\": \"ResourceGroupNotFound\", \"message\": \"Resource group 'container-registry' could not be found.\"}\n\nPlease visit https://dagger.io/help#go for troubleshooting guidance."
+2023-02-13T14:05:07+01:00 ERR action.go:250 > error="1 component(s) failed"
+```
+The reason for cr failure is missing resource group, cannot validate. By deploying the resource group first, 
+the validation will pass, also what-if.
+
+### if navutv rg 
+```zsh
+./output/darwin/arm64/ddo if navutv rg
+#output
+2023-02-13T14:11:05+01:00 INF action.go:43 > start dagger client
+2023-02-13T14:11:07+01:00 INF action.go:155 > searched for ddo.cue [./test/infrastructure/automation]
+2023-02-13T14:11:07+01:00 INF action.go:160 > reading action specification ./test/infrastructure/automation
+2023-02-13T14:11:10+01:00 INF action.go:190 > get selection: actions.if.navutv.rg|@pretty
+2023-02-13T14:11:10+01:00 INF action.go:190 > get selection: deployOrder|@pretty
+2023-02-13T14:11:10+01:00 INF action.go:141 > resolve data injections for components
+2023-02-13T14:11:10+01:00 INF component.go:220 > injection for ./test/infrastructure/resourceGroup
+2023-02-13T14:11:10+01:00 INF action.go:190 > get selection: actions.ce.navutv.cr|@pretty
+2023-02-13T14:11:17+01:00 INF action.go:190 > get selection: actions.ce.navutv.cr|@pretty
+2023-02-13T14:11:18+01:00 INF action.go:190 > get selection: actions.ce.navutv.cr|@pretty
+2023-02-13T14:11:18+01:00 INF component.go:171 > [navutv rg] if
+2023-02-13T14:11:59+01:00 INF component.go:112 > [navutv rg]
+Note: The result may contain false positive predictions (noise).
+You can help us improve the accuracy of the result by opening an issue here: https://aka.ms/WhatIfIssues
+
+Resource and property changes are indicated with this symbol:
+  + Create
+
+The deployment will update the following scope:
+
+Scope: /subscriptions/ca1e4592-6211-4c03-aac5-e681c1d1ea0d
+
+  + resourceGroups/container-registry [2021-04-01]
+
+      apiVersion:           "2021-04-01"
+      id:                   "/subscriptions/ca1e4592-6211-4c03-aac5-e681c1d1ea0d/resourceGroups/container-registry"
+      location:             "norwayeast"
+      name:                 "container-registry"
+      tags.Application:     "ddo"
+      tags.Provenance:      "https://github.com/ttnesby/ddo"
+      tags.Team:            "azure-platform"
+      tags.Technical Owner: "azure-platform"
+      type:                 "Microsoft.Resources/resourceGroups"
+
+Resource changes: 1 to create.
+2023-02-13T14:11:59+01:00 INF action.go:94 > done!
+```
+### de navutv rg
+```zsh
+./output/darwin/arm64/ddo de navutv rg
+#output
+
+```
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-## Usage
 
 
 
