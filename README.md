@@ -1,6 +1,6 @@
 # Infrastructure as Configuration
 
-`ddo` (DaggerDO) is a `thin` concept tool for `azure infrastructure as configuration`. The building blocks are:
+`ddo` (DaggerDO) is a tool for `azure infrastructure as configuration`. The building blocks are:
 > - Use [cue language](https://cuelang.org/) for json parameters and deployment destination for bicep templates
 > - Use cue language for orchestrating deployment of multiple templates, including order and data dependencies
 > - Use of [dagger.io](https://dagger.io/) for supporting both local - and GitHub actions CI/CD
@@ -25,7 +25,7 @@ infrastructure component, are still popping up.
 ## Configuration example
 
 `./test/infrastructure` is an example of a simple infrastructure solution. A resource group with a container registry, 
-to be deployed to two different tenants. The `navutv` tenant is a `dev` tenant, while the `navno` tenant is a `prod` tenant.
+to be deployed to two different tenants. 
 
 >**Warning** cuelang versus json/yaml is a involving topic beyond the scope of this document. Briefly, it's a 
 > configuration language with schema and import support included. Thus, configure once and 
@@ -220,15 +220,81 @@ The `json-look` with action `ce` only. The json for the other actions are simila
   }
 }
 ```
-
+#### Path oriented
 By looking at the above json-file, the meaning of `path oriented` is easy to understand, it's a kind of path in the json file:
 - `ddo ce navutv rg` will export the config for `resourceGroup` with `tenant=navutv` tag
 - `ddo ce navutv cr` will export the config for `containerRegistry` with `tenant=navutv` tag
 - `ddo ce navno` will export the config for both `resourceGroup` and `containerRegistry` with `tenant=navno` tag
 - `ddo ce` will export the config for both components and both tenants
 
-The same behavior is also available for the other actions. The relevant structure and depth for each action is up to 
-the user to define.
+The relevant structure and depth for each action is up to the user to define.
+
+#### deployOrder and parallelism
+
+The `deployOrder` is a list of lists, defining the order of component deployment. All components in a sub list are invoked
+in parallel. See order and parallelism per action:
+> - `ce`,`va`,`if` - order doesn't matter, all components are in one sublist
+> - `de` - order matters, computation will stop if a component fails
+> - `evomer` - reversed order matters, computation will stop if a component fails 
+
+### Cyclic dependencies
+
+Depending on the infrastructure solution, there might be cyclic dependencies between components. E.g. in a solution for 
+`hybrid`connectivity, the virtual hub is created first, while azure firewall and express route gateway is created 
+later, both importing the virtual hub configuration and `link` to the virtual hub. 
+
+If the virtual hub is updated (tags or whatever) later, the hub must refer to the resource Ids for firewall and 
+express route gateway iff they exists. Since cue configuration is `hermetic` and cyclic dependencies are not allowed, such 
+data dependencies are solved with use of tags.
+
+The `resourceGroup` component is over engineered, but with the purpose of showing how to solve cyclic dependencies.
+
+The `resourceGroup/deploy.cue` component is defined with the following extra tags:
+```cue
+_crid:             *"" | string  @tag(crid)
+_crpoltruststatus: *"" | string  @tag(crpoltruststatus)
+_crb64:            *"" | string  @tag(crb64)
+```
+They are defaulting to empty string, but will be set by the orchestration, when the `resourceGroup` component is engaged.
+In this example, the extra tags are just enhancing the resource group tags.
+
+The value for those tags are defined the un orchestration configuration (`ddo.cue`):
+```cue
+	rg: #component & {
+		 folder: "\(_componentsPath)/resourceGroup"
+		 tags: [
+			"tenant=\(#tenant)",
+			// azure data lookup, << pathComponent << pathData (`azure resource show` as reference)
+			"crid=<<\(#tenant).cr<<id",
+			"crpoltruststatus=<<\(#tenant).cr<<properties.policies.trustPolicy.status",
+			// azure data lookup, << pathComponent << b64
+			"crb64=<<\(#tenant).cr<<b64",
+		]
+	}
+```
+
+The syntax is simple; `tagname=<<componentPath<<dataPath|b64`. 
+- `crid=<<\(#tenant).cr<<id` will give the `id` for container registry in relevant tenant
+- `crpoltruststatus=<<\(#tenant).cr<<properties.policies.trustPolicy.status` will give the `properties.policies.trustPolicy.status` 
+for container registry in relevant tenant
+- `crb64=<<\(#tenant).cr<<b64` will give the `b64` string for container registry properties in relevant tenant
+
+The `b64` is a special case since tags are simple values only, no objects or lists.
+
+> The data set reference for a component is `azure resource show --ids <#resourceId of the component>`
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ## Usage
