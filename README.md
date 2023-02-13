@@ -16,7 +16,7 @@ The core actions for one or multiple infrastructure components are:
 `va` will report any regional restrictions or policy violations.
 
 `if` is a dry-run of `de` and will report any changes to the infrastructure. Since each bicep template is simple in 
-terms of just one template, the what-if is is working as good-as-it-can. The `false-positives`, depending on the type of 
+terms of just one template, the what-if is working as good-as-it-can. The `false-positives`, depending on the type of 
 infrastructure component, are still popping up.
 
 > `ddo` is `path oriented`, meaning that the chosen action will be applied to all components in the path. See 
@@ -27,7 +27,7 @@ infrastructure component, are still popping up.
 `./test/infrastructure` is an example of a simple infrastructure solution. A resource group with a container registry, 
 to be deployed to two different tenants. 
 
->**Warning** cuelang versus json/yaml is a involving topic beyond the scope of this document. Briefly, it's a 
+>**Warning** cuelang versus json/yaml is an involving topic beyond the scope of this document. Briefly, it's a 
 > configuration language with schema and import support included. Thus, configure once and 
 > reuse where appropriate.
 
@@ -40,7 +40,7 @@ to be deployed to two different tenants.
   - relevant tags
 
 The global configuration is used by the `resourceGroup` and `containerRegistry` components. In addition, it can be reused
-in `Orchestration configuration` and in Github actions, e.g. federated login.
+in `Orchestration configuration` and in GitHub actions, e.g. federated login.
 
 ### Resource group configuration
 - `./test/infrastructure/resourceGroup` is the resource group component
@@ -244,10 +244,10 @@ Depending on the infrastructure solution, there might be cyclic dependencies bet
 later, both importing the virtual hub configuration and `link` to the virtual hub. 
 
 If the virtual hub is updated (tags or whatever) later, the hub must refer to the resource Ids for firewall and 
-express route gateway iff they exists. Since cue configuration is `hermetic` and cyclic dependencies are not allowed, such 
+express route gateway iff they exist. Since cue configuration is `hermetic` and cyclic dependencies are not allowed, such 
 data dependencies are solved with use of tags.
 
-The `resourceGroup` component is over engineered, but with the purpose of showing how to solve cyclic dependencies.
+The `resourceGroup` component is over-engineered, but with the purpose of showing how to solve cyclic dependencies.
 
 The `resourceGroup/deploy.cue` component is defined with the following extra tags:
 ```cue
@@ -328,8 +328,10 @@ Options:
   -no-result
     	No display of action result
 ```
-`-no-result` is a good thing to use when running in a CI/CD pipeline. The exit code will be 0 if the actions were 
+> - `-no-result` is a good thing to use when running in a CI/CD pipeline. The exit code will be 0 if the actions were 
 successful, otherwise 1.
+> - `-debug` will show the orchestration of `cue cli` and `az cli` commands
+> - `-debug-container` will show the details inside the `sibling` container used by dagger.io
 
 ### -no-result ce navutv 
 ```zsh
@@ -373,8 +375,10 @@ successful, otherwise 1.
 2023-02-13T14:05:06+01:00 ERR component.go:108 > error="[navutv cr] failed \ninput:1: container.from.withMountedDirectory.withMountedDirectory.withWorkdir.withExec.withExec.stdout process \"az deployment group validate --name 46e12143-6c37-587d-96c8-15472baf8e89 --subscription ca1e4592-6211-4c03-aac5-e681c1d1ea0d --resource-group container-registry --template-file ./test/infrastructure/containerRegistry/main.bicep --parameters @/tmp/ddo.parameters.01GS5E16GG1JV1BZZN9K362MP8.json --out yaml\" did not complete successfully: exit code: 1\nStdout:\n\nStderr:\nERROR: {\"code\": \"ResourceGroupNotFound\", \"message\": \"Resource group 'container-registry' could not be found.\"}\n\nPlease visit https://dagger.io/help#go for troubleshooting guidance."
 2023-02-13T14:05:07+01:00 ERR action.go:250 > error="1 component(s) failed"
 ```
-The reason for cr failure is missing resource group, cannot validate. By deploying the resource group first, 
-the validation will pass, also what-if.
+The reason for cr failure is `az cli` by design. Cannot validate a component to be placed in a resource group, if the 
+resource doesn't exist. By deploying the resource group first, both validation and what-if will pass. 
+
+> The user can design composite bicep templates, but then the what-if will be less trustworthy. 
 
 ### if navutv rg 
 ```zsh
@@ -421,8 +425,28 @@ Resource changes: 1 to create.
 ```zsh
 ./output/darwin/arm64/ddo de navutv rg
 #output
-
+2023-02-13T15:21:47+01:00 INF action.go:43 > start dagger client
+2023-02-13T15:21:49+01:00 INF action.go:147 > searched for ddo.cue [./test/infrastructure/automation]
+2023-02-13T15:21:49+01:00 INF action.go:152 > reading action specification ./test/infrastructure/automation
+2023-02-13T15:21:50+01:00 INF action.go:182 > get selection: actions.de.navutv.rg|@pretty
+2023-02-13T15:21:50+01:00 INF action.go:182 > get selection: deployOrder|@pretty
+2023-02-13T15:21:50+01:00 INF action.go:133 > resolve data injections for components
+2023-02-13T15:21:50+01:00 INF component.go:220 > injection for ./test/infrastructure/resourceGroup
+2023-02-13T15:21:50+01:00 INF action.go:182 > get selection: actions.ce.navutv.cr|@pretty
+2023-02-13T15:21:56+01:00 INF action.go:182 > get selection: actions.ce.navutv.cr|@pretty
+2023-02-13T15:21:56+01:00 INF action.go:182 > get selection: actions.ce.navutv.cr|@pretty
+2023-02-13T15:21:57+01:00 INF component.go:171 > [navutv rg] de
+2023-02-13T15:22:53+01:00 INF component.go:112 > [navutv rg]
+id: /subscriptions/ca1e4592-6211-4c03-aac5-e681c1d1ea0d/providers/Microsoft.Resources/deployments/f4381b42-ff52-586b-b5ee-4fbdcb7f3406
+location: norwayeast
+name: f4381b42-ff52-586b-b5ee-4fbdcb7f3406
+properties:
+...shortened...
+2023-02-13T15:22:53+01:00 INF action.go:89 > done!
 ```
+Now is it possible to run `va navutv` and `if navutv`.
+> `de navutv` and `evomer navutv` is left to the reader.
+
 
 
 
