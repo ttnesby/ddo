@@ -283,13 +283,14 @@ The `b64` is a special case since tags are simple values only, no objects or lis
 
 > The data set reference for a component is `azure resource show --ids <#resourceId of the component>`
 
-## Usage - az cli is installed
+## Usage
 
-Having `az cli` installed is the easiest way to use `ddo`. It supports inheritance of the hosts `.azure` folder
+[`az cli`](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) must be installed. 
+`ddo` supports inheritance of the host `.azure` folder
 
 > - Pre-requisites: a terminal window and in a repo root folder supporting relevant configuration, e.g. this project
 > - Pre-requisites: in a terminal window, do az login for relevant tenants 
-> - `docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd):/rr -v ~/.azure:/root/.azure docker.io/ttnesby/ddo:latest`
+> - Do `docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd):/rr -v ~/.azure:/root/.azure docker.io/ttnesby/ddo:latest`
 
 The docker run command has three mounts:
 1. `/var/run/docker.sock:/var/run/docker.sock` - to be able to run docker commands from within the container (kind of docker-in-docker where dagger.io will be a `sibling` of this container)
@@ -447,82 +448,16 @@ properties:
 Now is it possible to run `va navutv` and `if navutv`.
 > `de navutv` and `evomer navutv` is left to the reader.
 
+## Technical details
 
+### ddo cli
+- `./cmd/ddo/main.go` using a set of components (action, alogger, arg, azcli, cuecli and path)
 
+### build ddo binary
+- `./src/build/main.go` - using dagger.io
 
+### build and push ddo docker image
+- `./src/image/main.go` - using dagger.io
 
-
-
-
-
-
- 
-
-## Infrastructure as Configuration
-
-## Prototyping
-
-### ddo as container
-
-`docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd):/rr -v ~/.azure:/root/.azure ttnesby/ddo:latest ce navutv cr`
-
-### ddo as binary
-
-`./build/darwin/arm64/ddo -no-result ce`
-
-
-
-## Test runs
-
-> Pre-requisites: 
-- `linux` or `macOS` with `go`,`docker`,`az cli` installed
-- `az login` to authenticate with azure has been run
-
-### Export config (ce)
-
-- configs across tenants
-`go run ./cmd/ddo/ ./test/infrastructure/automation ce`
-
-- configs for a specific tenant navutv|navno
-`go run ./cmd/ddo/ ./test/infrastructure/automation ce navutv`
-
-- config for a specific component rg|cr
-`go run ./cmd/ddo/ ./test/infrastructure/automation ce navutv rg`
-
-### Validate config (va)
-
-- configs across tenants
-`go run ./cmd/ddo/ ./test/infrastructure/automation va`
-
-- configs for a specific tenant navutv|navno
-`go run ./cmd/ddo/ ./test/infrastructure/automation va navutv`
-
-- config for a specific component rg|cr
-`go run ./cmd/ddo/ ./test/infrastructure/automation va navutv rg`
-
-**Observes the following:** validation will fail for `cr` if the `rg` is not present in azure
-
-### What-if config (if)
-
-as above, but with `if` instead of `va`
-
-### Deploy config (de)
-
-as above, but with `de` instead of `va`
-
-## Clear cache once a while:
-
-build cache: `go clean -cache`
-
-test cache: `go clean -testcache`
-
-## Verbose tests:
-
-`go test -v ./... -tags=unit -count 10`
-
-`go test -v ./... -tags=integration -count 2`
-
-## Docker stuff
-
-In case you want to run the docker image locally, you can do so by running the following command
-`docker run --platform=linux/amd64 -v $(pwd):/rr -it --rm ttnesby/azbicue:latest`
+### build and push tools docker image (az cli, bicep, cue cli)
+- `./src/tools/main.go` - using dagger.io
