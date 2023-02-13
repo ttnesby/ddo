@@ -76,14 +76,9 @@ func Do(ctx context.Context) (e error) {
 		return e
 	}
 
-	//selection, deployOrder, e := getSelectionAndDeployOrder(actionJson)
-	//if e != nil {
-	//	return e
-	//}
-
 	components := component.ActionsToComponents(selection, deployOrder, dc, ctx)
 
-	if e = resolveDataInjection(actionJson, deployOrder, components, dc, ctx); e != nil {
+	if e = resolveDataInjection(actionJson, components, dc, ctx); e != nil {
 		return e
 	}
 
@@ -98,7 +93,6 @@ func Do(ctx context.Context) (e error) {
 
 func resolveDataInjection(
 	actionJson string,
-	deployOrder gjson.Result,
 	components [][]component.Component,
 	container *dagger.Container,
 	ctx context.Context) (e error) {
@@ -110,13 +104,11 @@ func resolveDataInjection(
 		if e != nil {
 			return data, e
 		}
-		r := component.ActionsToComponents(selection, deployOrder, container, ctx)
-		// can only do data lookup on a single component
-		if len(r) != 1 || len(r[0]) != 1 {
-			return data, l.Error(fmt.Errorf("data injection must be based on a single component"))
+		diCo, e := component.ParseSingle(selection, container, ctx)
+		if e != nil {
+			return data, e
 		}
-		diCo := r[0][0]
-		// get the resourceId
+
 		rId, e := diCo.ResourceId()
 		if e != nil {
 			return data, e
@@ -195,6 +187,7 @@ func jsonSelect(actionJson, aPath string) (selection gjson.Result, e error) {
 	if !gjson.Valid(selection.String()) {
 		return selection, l.Error(fmt.Errorf("resulting json-selection from path is invalid"))
 	}
+	l.Debugf("%v", selection.String())
 	return selection, nil
 }
 

@@ -285,6 +285,24 @@ func parse(json gjson.Result, cc conctx) (components []Component) {
 	return tmp
 }
 
+func ParseSingle(
+	json gjson.Result,
+	container *dagger.Container,
+	ctx context.Context) (co Component, e error) {
+
+	l.Debugf("try to parse single data injection component")
+	if !json.IsObject() || !objectIsComponent(json.Value().(map[string]interface{})) {
+		return co, l.Error(fmt.Errorf("data injection must be based on a single component"))
+	}
+
+	return createComponent(
+		[]string{"data", "injection"},
+		json.Get("folder").String(),
+		getTags(json.Get("tags").Array()),
+		conctx{container: container, ctx: ctx},
+	), nil
+}
+
 func orderComponents(components []Component, deployOrder gjson.Result) (ordCo [][]Component) {
 
 	l.Debugf("maybe group components %v", components)
