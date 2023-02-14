@@ -33,7 +33,7 @@ _tagAnonymousPullEnabled: [
 	{}
 	][0]
 
-#name:     "container-registry"
+#name:     "container-registry-test"
 #location: g.#location.norwayeast
 #tags:     {...,g.#tagsTemplate} & _tagCRId & _tagCRTrustStatus & _tagAnonymousPullEnabled
 
