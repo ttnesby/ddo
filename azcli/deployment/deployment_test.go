@@ -10,15 +10,13 @@ import (
 )
 
 const (
-	location      = "norwayeast"
-	mgId          = "6ba7b810-9dad-11d1-80b4-00c04fd43022"
-	subId         = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
-	rgName        = "myRg"
-	validBicep    = "./test/data/resourceGroup.bicep"
-	validParams   = "./test/data/resourceGroup.params.json"
-	invalidUUID   = "6ba7"
-	invalidBicep  = "./test/n/a/invalid.bicep"
-	invalidParams = "./test/n/a/invalid.params.json"
+	location    = "norwayeast"
+	mgId        = "6ba7b810-9dad-11d1-80b4-00c04fd43022"
+	subId       = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	rgName      = "myRg"
+	validBicep  = "./test/data/resourceGroup.bicep"       // dummy path, don't exist
+	validParams = "./test/data/resourceGroup.params.json" // dummy path, don't exist
+	invalidUUID = "6ba7"
 )
 
 func TestMain(m *testing.M) {
@@ -42,16 +40,6 @@ func destAndOps(templatePath, paramsPath string, aDest dep.ADestination) error {
 		func() (dep.AzCli, error) { return dep.WhatIf(templatePath, paramsPath, aDest) },
 		func() (dep.AzCli, error) { return dep.Deploy(templatePath, paramsPath, aDest) },
 	}
-
-	//tfp := path.RepoAbs(templatePath)
-	//if !path.AbsExists(tfp) {
-	//	return fmt.Errorf("template file %s does not exist", tfp)
-	//}
-
-	//pfp := path.RepoAbs(paramsPath)
-	//if !path.AbsExists(pfp) {
-	//	return fmt.Errorf("params file %s does not exist", pfp)
-	//}
 
 	for _, op := range ops {
 		got, err := op()
