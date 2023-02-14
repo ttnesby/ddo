@@ -167,7 +167,7 @@ The `json-look`
     - actions - relevant groupings under actions and components 
     - deployOrder - list of lists, defining the order of component deployment
 
-The `json-look` with action `ce` only. The json for the other actions are similar.
+The `json-look` with action `ce` only is displayed below. The json for the other actions are similar.
 ```zsh
 029f926b34d1:/rr# cue export ./test/infrastructure/automation
 #output
@@ -376,8 +376,8 @@ successful, otherwise 1.
 2023-02-13T14:05:06+01:00 ERR component.go:108 > error="[navutv cr] failed \ninput:1: container.from.withMountedDirectory.withMountedDirectory.withWorkdir.withExec.withExec.stdout process \"az deployment group validate --name 46e12143-6c37-587d-96c8-15472baf8e89 --subscription ca1e4592-6211-4c03-aac5-e681c1d1ea0d --resource-group container-registry --template-file ./test/infrastructure/containerRegistry/main.bicep --parameters @/tmp/ddo.parameters.01GS5E16GG1JV1BZZN9K362MP8.json --out yaml\" did not complete successfully: exit code: 1\nStdout:\n\nStderr:\nERROR: {\"code\": \"ResourceGroupNotFound\", \"message\": \"Resource group 'container-registry' could not be found.\"}\n\nPlease visit https://dagger.io/help#go for troubleshooting guidance."
 2023-02-13T14:05:07+01:00 ERR action.go:250 > error="1 component(s) failed"
 ```
-The reason for cr failure is `az cli` by design. Cannot validate a component to be placed in a resource group, if the 
-resource doesn't exist. By deploying the resource group first, both validation and what-if will pass. 
+The reason for cr failure is `az cli` by design. Cannot validate a component to be placed in a resource group if the 
+resource group doesn't exist. By deploying the resource group first, both validation and what-if will pass. 
 
 > The user can design composite bicep templates, but then the what-if will be less trustworthy. 
 
